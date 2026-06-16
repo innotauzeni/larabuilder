@@ -202,4 +202,9 @@ export interface WebDesignConfig {
   productModels: DynamicProductModel[];
   laravelVersion: 'v11.x' | 'v10.x';
   dbDriver: 'mysql' | 'sqlite' | 'pgsql';
+  dbHost?: string;
+  dbPort?: string;
+  dbDatabase?: string;
+  dbUsername?: string;
+  dbPassword?: string;
 }

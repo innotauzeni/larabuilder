@@ -205,27 +205,31 @@ class DatabaseSeeder extends Seeder
     public function run(): void
     {
         // Seeding interactive blog posts
-        ${config.blogModels.map(b => `
+        ${(config.blogModels || []).map(b => `
         BlogPost::create([
-            'title' => '${b.title.replace(/'/g, "\\'")}',
-            'slug' => '${b.slug}',
-            'excerpt' => '${b.excerpt.replace(/'/g, "\\'")}',
-            'body' => '${b.body.replace(/'/g, "\\'")}',
-            'category' => '${b.category}',
-            'author' => '${b.author}',
-            'image_url' => '${b.imageUrl}'
+            'title' => '${(b.title || '').replace(/'/g, "\\'")}',
+            'slug' => '${b.slug || ''}',
+            'excerpt' => '${(b.excerpt || '').replace(/'/g, "\\'")}',
+            'body' => '${(b.body || '').replace(/'/g, "\\'")}',
+            'category' => '${(b.category || '').replace(/'/g, "\\'")}',
+            'author' => '${(b.author || '').replace(/'/g, "\\'")}',
+            'image_url' => '${(b.imageUrl || '').replace(/'/g, "\\'")}'
         ]);`).join('\n')}
 
         // Seeding products
-        ${config.productModels.map(p => `
+        ${(config.productModels || []).map(p => {
+          const rawPrice = p.price != null ? String(p.price) : '0';
+          const cleanPrice = parseFloat(rawPrice.replace(/[^0-9.]/g, '')) || 0.00;
+          return `
         Product::create([
-            'name' => '${p.name.replace(/'/g, "\\'")}',
-            'slug' => '${p.slug}',
-            'price' => ${p.price},
-            'description' => '${p.description.replace(/'/g, "\\'")}',
-            'image_url' => '${p.imageUrl}',
+            'name' => '${(p.name || '').replace(/'/g, "\\'")}',
+            'slug' => '${p.slug || ''}',
+            'price' => ${cleanPrice.toFixed(2)},
+            'description' => '${(p.description || '').replace(/'/g, "\\'")}',
+            'image_url' => '${(p.imageUrl || '').replace(/'/g, "\\'")}',
             'in_stock' => ${p.inStock ? 'true' : 'false'}
-        ]);`).join('\n')}
+        ]);`;
+        }).join('\n')}
     }
 }
 `;
@@ -292,14 +296,14 @@ class DatabaseSeeder extends Seeder
 `;
 
   // 7. resources/views/welcome.blade.php (Home View)
-  files['resources/views/welcome.blade.php'] = generateBladeViewString(activePage.blocks, true);
+  files['resources/views/welcome.blade.php'] = generateBladeViewString(activePage.blocks, true, config.projectName);
 
   // 8. Other sub-pages inside resources/views/pages/
   config.pages.filter(p => p.id !== 'home').forEach(p => {
-    files[`resources/views/pages/${p.slug}.blade.php`] = generateBladeViewString(p.blocks, false);
+    files[`resources/views/pages/${p.slug}.blade.php`] = generateBladeViewString(p.blocks, false, config.projectName);
   });
 
-  // 9. Laravel Config files
+  // 9. Laravel Config and Standard Boilerplate files
   files['composer.json'] = `{
     "name": "laravel/laravel",
     "type": "project",
@@ -310,6 +314,13 @@ class DatabaseSeeder extends Seeder
         "php": "^8.2",
         "laravel/framework": "^11.0",
         "laravel/tinker": "^2.9"
+    },
+    "autoload": {
+        "psr-4": {
+            "App\\\\": "app/",
+            "Database\\\\Factories\\\\": "database/factories/",
+            "Database\\\\Seeders\\\\": "database/seeders/"
+        }
     }
 }`;
 
@@ -338,6 +349,219 @@ export default defineConfig({
         }),
     ],
 });`;
+
+  const hostVal = config.dbHost || '127.0.0.1';
+  let defaultPort = '3306';
+  if (config.dbDriver === 'pgsql') {
+    defaultPort = '5432';
+  } else if (config.dbDriver === 'sqlite') {
+    defaultPort = '';
+  }
+  const portVal = config.dbPort !== undefined ? config.dbPort : defaultPort;
+  const dbNameVal = config.dbDatabase || config.projectName || 'laravel';
+  const usernameVal = config.dbUsername !== undefined ? config.dbUsername : 'root';
+  const passwordVal = config.dbPassword !== undefined ? config.dbPassword : '';
+
+  files['.env.example'] = `APP_NAME="${config.projectName || 'LaraBoot'}"
+APP_ENV=local
+APP_KEY=
+APP_DEBUG=true
+APP_TIMEZONE=UTC
+APP_URL=http://localhost:8000
+
+LOG_CHANNEL=stack
+LOG_LEVEL=debug
+
+DB_CONNECTION=${config.dbDriver || 'sqlite'}
+DB_HOST=${hostVal}
+DB_PORT=${portVal}
+DB_DATABASE=${dbNameVal}
+DB_USERNAME=${usernameVal}
+DB_PASSWORD=${passwordVal}
+
+SESSION_DRIVER=cookie
+SESSION_LIFETIME=120
+`;
+
+  files['database/database.sqlite'] = '';
+
+  files['artisan'] = `#!/usr/bin/env php
+<?php
+
+// Laravel Command Line Tool
+// Generated automatically by LaraBoot CMS Visual Compiler.
+
+define('LARAVEL_START', microtime(true));
+
+// Determine if the application is in maintenance mode...
+if (file_exists($maintenance = __DIR__.'/storage/framework/maintenance.php')) {
+    require $maintenance;
+}
+
+// Register the Composer autoloader...
+require __DIR__.'/vendor/autoload.php';
+
+// Boot Laravel and handle the command...
+$app = require_once __DIR__.'/bootstrap/app.php';
+
+$kernel = $app->make(Illuminate\\Contracts\\Console\\Kernel::class);
+
+$status = $kernel->handle(
+    $input = new Symfony\\Component\\Console\\Input\\ArgvInput,
+    new Symfony\\Component\\Console\\Output\\ConsoleOutput
+);
+
+$kernel->terminate($input, $status);
+
+exit($status);
+`;
+
+  files['bootstrap/app.php'] = `<?php
+
+use Illuminate\\Foundation\\Application;
+use Illuminate\\Foundation\\Configuration\\Exceptions;
+use Illuminate\\Foundation\\Configuration\\Middleware;
+
+return Application::configure(basePath: dirname(__DIR__))
+    ->withRouting(
+        web: __DIR__.'/../routes/web.php',
+        commands: __DIR__.'/../routes/console.php',
+        health: '/up',
+    )
+    ->withMiddleware(function (Middleware $middleware) {
+        // Middleware customized by LaraBoot Studio
+    })
+    ->withExceptions(function (Exceptions $exceptions) {
+        // Exception management
+    })->create();
+`;
+
+  files['bootstrap/providers.php'] = `<?php
+
+return [
+    App\\Providers\\AppServiceProvider::class,
+];
+`;
+
+  files['app/Providers/AppServiceProvider.php'] = `<?php
+
+namespace App\\Providers;
+
+use Illuminate\\Support\\ServiceProvider;
+
+class AppServiceProvider extends ServiceProvider
+{
+    /**
+     * Register any application services.
+     */
+    public function register(): void
+    {
+        //
+    }
+
+    /**
+     * Bootstrap any application services.
+     */
+    public function boot(): void
+    {
+        //
+    }
+}
+`;
+
+  files['routes/console.php'] = `<?php
+
+use Illuminate\\Support\\Facades\\Artisan;
+
+Artisan::command('inspire', function () {
+    $this->comment(Illuminate\\Foundation\\Inspiring::quote());
+})->purpose('Display an inspiring quote');
+`;
+
+  files['public/index.php'] = `<?php
+
+use Illuminate\\Http\\Request;
+
+define('LARAVEL_START', microtime(true));
+
+// Determine if the application is in maintenance mode...
+if (file_exists($maintenance = __DIR__.'/../storage/framework/maintenance.php')) {
+    require $maintenance;
+}
+
+// Register the Composer autoloader...
+require __DIR__.'/../vendor/autoload.php';
+
+// Bootstrap Laravel and handle the request...
+(require_once __DIR__.'/../bootstrap/app.php')
+    ->handleRequest(Request::capture());
+`;
+
+  files['config/database.php'] = `<?php
+
+return [
+
+    'default' => env('DB_CONNECTION', '${config.dbDriver || 'sqlite'}'),
+
+    'connections' => [
+
+        'sqlite' => [
+            'driver' => 'sqlite',
+            'url' => env('DB_URL'),
+            'database' => env('DB_DATABASE', database_path('database.sqlite')),
+            'prefix' => '',
+            'foreign_key_constraints' => env('DB_FOREIGN_KEYS', true),
+        ],
+
+        'mysql' => [
+            'driver' => 'mysql',
+            'url' => env('DB_URL'),
+            'host' => env('DB_HOST', '127.0.0.1'),
+            'port' => env('DB_PORT', '3306'),
+            'database' => env('DB_DATABASE', 'laravel'),
+            'username' => env('DB_USERNAME', 'root'),
+            'password' => env('DB_PASSWORD', ''),
+            'unix_socket' => env('DB_SOCKET', ''),
+            'charset' => env('DB_CHARSET', 'utf8mb4'),
+            'collation' => env('DB_COLLATION', 'utf8mb4_unicode_ci'),
+            'prefix' => '',
+            'prefix_indexes' => true,
+            'strict' => true,
+            'engine' => null,
+            'options' => extension_loaded('pdo_mysql') ? array_filter([
+                PDO::MYSQL_ATTR_SSL_CA => env('MYSQL_ATTR_SSL_CA'),
+            ]) : [],
+        ],
+
+        'pgsql' => [
+            'driver' => 'pgsql',
+            'url' => env('DB_URL'),
+            'host' => env('DB_HOST', '127.0.0.1'),
+            'port' => env('DB_PORT', '5432'),
+            'database' => env('DB_DATABASE', 'laravel'),
+            'username' => env('DB_USERNAME', 'root'),
+            'password' => env('DB_PASSWORD', ''),
+            'charset' => env('DB_CHARSET', 'utf8'),
+            'prefix' => '',
+            'prefix_indexes' => true,
+            'search_path' => 'public',
+            'sslmode' => 'prefer',
+        ],
+
+    ],
+
+    'migrations' => 'migrations',
+
+];
+`;
+
+  files['resources/css/app.css'] = `/* Custom Styles compiled by LaraBoot CMS Studio */
+@import "bootstrap/dist/css/bootstrap.min.css";
+`;
+
+  files['resources/js/app.js'] = `// Main JS compiled by LaraBoot CMS Studio
+import 'bootstrap';
+`;
 
   files['README.md'] = `# ${config.projectName} - Laravel CMS Website
 Generated with **LaraBoot Visual Builder CMS** on ${new Date().toLocaleDateString()}.
@@ -385,7 +609,7 @@ function hexToRgb(hex: string): string {
 }
 
 // Subroutine: convert block list directly to highly optimized Laravel Blade code
-function generateBladeViewString(blocks: Block[], isHome: boolean): string {
+function generateBladeViewString(blocks: Block[], isHome: boolean, projectName: string = 'Laraboot'): string {
   let content = `@extends('layouts.app')
 
 @section('title', '${isHome ? 'Welcome Portal' : 'Custom Section'}')
@@ -752,7 +976,7 @@ function generateBladeViewString(blocks: Block[], isHome: boolean): string {
         <div class="container py-3">
             <div class="row g-4 align-items-center justify-content-between">
                 <div class="col-md-5">
-                    <h5 class="fw-bold text-white mb-3"><i class="bi bi-cpu text-primary me-2"></i>{{ $projectName ?? '${config.projectName}' }}</h5>
+                    <h5 class="fw-bold text-white mb-3"><i class="bi bi-cpu text-primary me-2"></i>{{ $projectName ?? '${projectName}' }}</h5>
                     <p class="text-secondary small mb-0">${block.text}</p>
                 </div>
                 <div class="col-md-4 text-md-end text-start">

@@ -17,7 +17,7 @@ export const COLOR_PALETTES: ColorPalette[] = [
     secondary: '#e0a96d', // Golden sandy
     dark: '#112211',
     light: '#f4fbf7',
-    fontFamily: 'Playfair Display'
+    fontFamily: 'Playfair'
   },
   {
     id: 'cyber-dark',

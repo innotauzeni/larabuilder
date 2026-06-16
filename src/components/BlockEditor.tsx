@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Block, FeatureItem, PricingTier, TestItem, TestimonialItem, GalleryItem, FooterBlock } from '../types';
+import { Block, FeatureItem, PricingTier, TestimonialItem, GalleryItem, FooterBlock } from '../types';
 import { Trash2, Plus, Sparkles, Wand2, RefreshCw, Layers, Edit3, CheckCircle, HelpCircle } from 'lucide-react';
 
 interface BlockEditorProps {

@@ -285,49 +285,49 @@ export default function SidebarEditor({
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 text-slate-300">
       {/* 1. Project Global Configurations */}
       <div>
-        <h4 className="text-xs font-bold uppercase tracking-wider text-slate-455 mb-2.5 flex items-center gap-1.5 px-0.5">
-          <Settings className="w-3.5 h-3.5 text-indigo-500" />
+        <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-2.5 flex items-center gap-1.5 px-0.5">
+          <Settings className="w-3.5 h-3.5 text-indigo-400" />
           Laravel Project Config
         </h4>
-        <div className="bg-white p-4.5 rounded-xl border border-slate-200 shadow-sm space-y-4">
+        <div className="bg-slate-900/40 p-4 rounded-xl border border-slate-700/50 space-y-4 shadow-xl">
           <div>
-            <label className="block text-[11px] font-semibold text-slate-500 mb-1">
+            <label className="block text-[11px] font-semibold text-slate-400 mb-1">
               Project Directory Name (PHP format)
             </label>
             <input
               type="text"
               value={config.projectName}
               onChange={(e) => handleProjectNameChange(e.target.value)}
-              className="w-full text-xs bg-slate-50 border border-slate-205 rounded-lg px-3 py-2 focus:bg-white focus:border-indigo-400 outline-none text-slate-800 font-mono"
+              className="w-full text-xs bg-slate-950/80 border border-slate-700/80 rounded-lg px-3 py-2 focus:border-indigo-500 outline-none text-white font-mono"
               placeholder="lara_custom_site"
             />
           </div>
 
           <div className="grid grid-cols-2 gap-2.5">
             <div>
-              <label className="block text-[10px] font-semibold text-slate-500 mb-1">
+              <label className="block text-[10px] font-semibold text-slate-400 mb-1">
                 Laravel CLI
               </label>
               <select
                 value={config.laravelVersion}
                 onChange={(e) => onChangeConfig({ ...config, laravelVersion: e.target.value as any })}
-                className="w-full text-xs bg-slate-50 border border-slate-205 py-1.5 px-2 rounded-lg text-slate-700"
+                className="w-full text-xs bg-slate-950/80 border border-slate-700/80 py-1.5 px-2 rounded-lg text-slate-200 outline-none focus:border-indigo-500"
               >
                 <option value="v11.x">L11 (Modern)</option>
                 <option value="v10.x">L10 (Stable)</option>
               </select>
             </div>
             <div>
-              <label className="block text-[10px] font-semibold text-slate-500 mb-1">
+              <label className="block text-[10px] font-semibold text-slate-400 mb-1">
                 SQL Database
               </label>
               <select
                 value={config.dbDriver}
                 onChange={(e) => onChangeConfig({ ...config, dbDriver: e.target.value as any })}
-                className="w-full text-xs bg-slate-50 border border-slate-205 py-1.5 px-2 rounded-lg text-slate-700"
+                className="w-full text-xs bg-slate-950/80 border border-slate-700/80 py-1.5 px-2 rounded-lg text-slate-200 outline-none focus:border-indigo-500"
               >
                 <option value="sqlite">SQLite (File)</option>
                 <option value="mysql">MySQL (RDS)</option>
@@ -341,25 +341,25 @@ export default function SidebarEditor({
       {/* 2. Page Directory / Routes Routing */}
       <div>
         <div className="flex justify-between items-center mb-2 px-0.5">
-          <h4 className="text-xs font-bold uppercase tracking-wider text-slate-455 flex items-center gap-1.5">
-            <Globe className="w-3.5 h-3.5 text-indigo-500" />
+          <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
+            <Globe className="w-3.5 h-3.5 text-indigo-400" />
             Page Routes (web.php)
           </h4>
           <button
             onClick={() => setShowAddPage(!showAddPage)}
-            className="text-[11px] text-indigo-600 hover:text-indigo-800 hover:underline font-semibold flex items-center gap-0.5"
+            className="text-[11px] text-indigo-400 hover:text-indigo-300 font-semibold flex items-center gap-0.5"
           >
             <Plus className="w-3 h-3" /> Add Page
           </button>
         </div>
 
         {showAddPage && (
-          <div className="bg-slate-50 border border-slate-200 p-3 rounded-lg flex gap-2 mb-3">
+          <div className="bg-slate-900/60 border border-slate-700 p-3 rounded-lg flex gap-2 mb-3">
             <input
               type="text"
               value={newPageTitle}
               onChange={(e) => setNewPageTitle(e.target.value)}
-              className="flex-1 text-xs px-2.5 py-1.5 bg-white border border-slate-205 rounded outline-none focus:border-indigo-400"
+              className="flex-1 text-xs px-2.5 py-1.5 bg-slate-950 border border-slate-700 text-white rounded outline-none focus:border-indigo-550"
               placeholder="e.g. Services, About Us"
             />
             <button
@@ -379,8 +379,8 @@ export default function SidebarEditor({
                 key={page.id}
                 className={`group flex items-center justify-between p-2.5 rounded-xl border transition-all ${
                   isActive
-                    ? 'bg-slate-900 border-slate-900 shadow-sm text-white'
-                    : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50'
+                    ? 'bg-indigo-600/20 border-indigo-500/50 text-indigo-200 shadow-sm'
+                    : 'bg-slate-900/30 border-slate-800 text-slate-300 hover:bg-slate-900/50 home-hover-target'
                 }`}
               >
                 <button
@@ -391,8 +391,8 @@ export default function SidebarEditor({
                   }}
                   className="flex-1 text-left"
                 >
-                  <div className="text-xs font-semibold">{page.title}</div>
-                  <div className={`text-[10px] font-mono mt-0.5 ${isActive ? 'text-slate-300' : 'text-slate-400'}`}>
+                  <div className="text-xs font-semibold text-white">{page.title}</div>
+                  <div className={`text-[10px] font-mono mt-0.5 ${isActive ? 'text-indigo-300' : 'text-slate-500'}`}>
                     GET /{page.slug === 'index' ? '' : page.slug}
                   </div>
                 </button>
@@ -400,9 +400,7 @@ export default function SidebarEditor({
                 {page.id !== 'home' && (
                   <button
                     onClick={() => handleDeletePage(page.id)}
-                    className={`ml-2 p-1 rounded-md opacity-0 group-hover:opacity-100 transition-opacity ${
-                      isActive ? 'text-slate-400 hover:text-rose-400' : 'text-slate-455 hover:text-rose-600'
-                    }`}
+                    className={`ml-2 p-1 rounded-md opacity-0 group-hover:opacity-100 transition-opacity text-slate-400 hover:text-rose-400`}
                     title="Delete page"
                   >
                     <Trash className="w-3.5 h-3.5" />
@@ -416,8 +414,8 @@ export default function SidebarEditor({
 
       {/* 3. Bootstrap Themes selection */}
       <div>
-        <h4 className="text-xs font-bold uppercase tracking-wider text-slate-455 mb-2.5 flex items-center gap-1.5 px-0.5">
-          <Palette className="w-3.5 h-3.5 text-indigo-500" />
+        <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-2.5 flex items-center gap-1.5 px-0.5">
+          <Palette className="w-3.5 h-3.5 text-indigo-400" />
           Color Theme Schemes
         </h4>
         <div className="grid grid-cols-1 gap-2">
@@ -428,18 +426,18 @@ export default function SidebarEditor({
                 key={p.id}
                 type="button"
                 onClick={() => handlePaletteSelect(p)}
-                className={`relative w-full p-3 rounded-xl border text-left flex items-center justify-between transition-all ${
-                  isSelected ? 'bg-indigo-50/50 border-indigo-400 shadow-sm' : 'bg-white border-slate-200 hover:bg-slate-50/50'
+                className={`relative w-full p-2.5 rounded-xl border text-left flex items-center justify-between transition-all ${
+                  isSelected ? 'bg-indigo-600/20 border-indigo-500/60 shadow-md' : 'bg-slate-900/30 border-slate-800 hover:bg-slate-900/50'
                 }`}
               >
                 <div>
-                  <div className="text-xs font-semibold text-slate-800">{p.name}</div>
-                  <div className="text-[10px] text-slate-500 font-mono mt-0.5">Font: {p.fontFamily}</div>
+                  <div className="text-xs font-semibold text-white">{p.name}</div>
+                  <div className="text-[10px] text-slate-400 font-mono mt-0.5">Font: {p.fontFamily}</div>
                 </div>
-                <div className="flex gap-1.5">
-                  <span className="w-4 h-4 rounded-full border border-slate-200" style={{ backgroundColor: p.primary }} />
-                  <span className="w-4 h-4 rounded-full border border-slate-200" style={{ backgroundColor: p.secondary }} />
-                  {isSelected && <Check className="w-4 h-4 text-indigo-600 ml-1.5" />}
+                <div className="flex gap-1.5 items-center">
+                  <span className="w-3.5 h-3.5 rounded-full border border-slate-700" style={{ backgroundColor: p.primary }} />
+                  <span className="w-3.5 h-3.5 rounded-full border border-slate-700" style={{ backgroundColor: p.secondary }} />
+                  {isSelected && <Check className="w-3.5 h-3.5 text-indigo-400 ml-1.5" />}
                 </div>
               </button>
             );
@@ -449,25 +447,27 @@ export default function SidebarEditor({
 
       {/* 4. Active Page visual layout modules ordering */}
       <div>
-        <h4 className="text-xs font-bold uppercase tracking-wider text-slate-455 mb-2.5 flex items-center gap-1.5 px-0.5">
-          <LayoutTemplate className="w-3.5 h-3.5 text-indigo-500" />
+        <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-2.5 flex items-center gap-1.5 px-0.5">
+          <LayoutTemplate className="w-3.5 h-3.5 text-indigo-400" />
           Block Hierarchy ({activePage.blocks.length})
         </h4>
 
-        <div className="bg-slate-50 border border-slate-200 rounded-xl p-2.5 space-y-1.5 mb-3">
+        <div className="bg-slate-900/40 border border-slate-700/50 rounded-xl p-2.5 space-y-1.5 mb-3">
           {activePage.blocks.map((block, idx) => {
             const isSelected = block.id === selectedBlockId;
             return (
               <div
                 key={block.id}
                 className={`p-2 rounded-lg border flex items-center justify-between transition-colors ${
-                  isSelected ? 'bg-indigo-100/50 border-indigo-300' : 'bg-white border-slate-200'
+                  isSelected ? 'bg-indigo-600/30 border-indigo-500/50' : 'bg-slate-950/50 border-slate-800'
                 }`}
               >
                 <button
                   type="button"
                   onClick={() => onSelectBlock(block.id)}
-                  className="flex-1 text-left font-mono text-[11px] capitalize text-slate-700 font-semibold truncate hover:text-indigo-600"
+                  className={`flex-1 text-left font-mono text-[11px] capitalize font-semibold truncate hover:text-indigo-400 ${
+                    isSelected ? 'text-indigo-300' : 'text-slate-300'
+                  }`}
                 >
                   {block.type} section
                 </button>
@@ -476,28 +476,28 @@ export default function SidebarEditor({
                   <button
                     disabled={idx === 0}
                     onClick={() => handleMoveBlock(idx, 'up')}
-                    className="p-1 rounded text-slate-400 hover:bg-slate-100 disabled:opacity-30"
+                    className="p-1 rounded text-slate-400 hover:bg-slate-800 disabled:opacity-30"
                   >
                     <ChevronUp className="w-3 h-3" />
                   </button>
                   <button
                     disabled={idx === activePage.blocks.length - 1}
                     onClick={() => handleMoveBlock(idx, 'down')}
-                    className="p-1 rounded text-slate-400 hover:bg-slate-100 disabled:opacity-30"
+                    className="p-1 rounded text-slate-400 hover:bg-slate-800 disabled:opacity-30"
                   >
                     <ChevronDown className="w-3 h-3" />
                   </button>
                   <button
                     onClick={() => handleToggleBlockVisibility(idx)}
-                    className="p-1 rounded text-slate-400 hover:bg-slate-100"
+                    className="p-1 rounded text-slate-400 hover:bg-slate-800"
                     title={block.visible ? 'Hide section' : 'Show section'}
                   >
-                    {block.visible ? <Eye className="w-3 h-3 text-slate-500" /> : <EyeOff className="w-3 h-3 text-slate-400" />}
+                    {block.visible ? <Eye className="w-3 h-3 text-slate-300" /> : <EyeOff className="w-3 h-3 text-slate-500" />}
                   </button>
                   {activePage.blocks.length > 2 && (
                     <button
                       onClick={() => handleDeleteBlock(idx)}
-                      className="p-1 rounded text-rose-400 hover:text-rose-600 hover:bg-rose-50"
+                      className="p-1 rounded text-rose-400 hover:text-rose-300 hover:bg-rose-900/20"
                       title="Remove section"
                     >
                       <Trash className="w-3 h-3" />
@@ -511,7 +511,7 @@ export default function SidebarEditor({
 
         {/* Append Sections list picker */}
         <div className="space-y-2">
-          <label className="text-[10px] font-semibold text-slate-500 block uppercase px-1">
+          <label className="text-[10px] font-semibold text-slate-400 block uppercase px-1 pb-1">
             Insert Visual Layout Section Module
           </label>
           <div className="grid grid-cols-2 gap-1.5">
@@ -520,10 +520,10 @@ export default function SidebarEditor({
                 key={typ}
                 type="button"
                 onClick={() => handleAddBlock(typ as any)}
-                className="bg-white hover:bg-indigo-50 border border-slate-200 rounded-lg p-2 text-left hover:border-indigo-300 transition-colors flex items-center gap-1.5"
+                className="bg-slate-900/30 hover:bg-indigo-600/10 border border-slate-800 rounded-lg p-2 text-left hover:border-indigo-500/50 transition-colors flex items-center gap-1.5"
               >
-                <Plus className="w-3 h-3 text-indigo-500 flex-shrink-0" />
-                <span className="text-[11px] font-medium text-slate-750 capitalize pointer-events-none">{typ}</span>
+                <Plus className="w-2.5 h-2.5 text-indigo-400 flex-shrink-0" />
+                <span className="text-[11px] font-medium text-slate-300 capitalize pointer-events-none">{typ}</span>
               </button>
             ))}
           </div>

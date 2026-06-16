@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { WebDesignConfig, DynamicBlogModel, DynamicProductModel } from '../types';
-import { Plus, Trash2, Database, BookOpen, ShoppingBag, Calendar, User, Tag, HelpCircle, Package, Archive } from 'lucide-react';
+import { Plus, Trash2, Database, BookOpen, ShoppingBag, Calendar, User, Tag, HelpCircle, Package, Archive, Terminal, Server, CheckCircle2, Play, Save, RefreshCw } from 'lucide-react';
 
 interface ContentDatabaseProps {
   config: WebDesignConfig;
@@ -8,7 +8,81 @@ interface ContentDatabaseProps {
 }
 
 export default function ContentDatabase({ config, onChangeConfig }: ContentDatabaseProps) {
-  const [activeTab, setActiveTab] = useState<'blogs' | 'products'>('blogs');
+  const [activeTab, setActiveTab] = useState<'blogs' | 'products' | 'migrations'>('blogs');
+
+  // Database Connection settings state
+  const [dbState, setDbState] = useState({
+    dbDriver: config.dbDriver || 'sqlite',
+    dbHost: config.dbHost || '127.0.0.1',
+    dbPort: config.dbPort || (config.dbDriver === 'pgsql' ? '5432' : config.dbDriver === 'sqlite' ? '' : '3306'),
+    dbDatabase: config.dbDatabase || config.projectName || 'laravel',
+    dbUsername: config.dbUsername || 'root',
+    dbPassword: config.dbPassword || '',
+  });
+
+  // Sync state if config changes
+  useEffect(() => {
+    setDbState({
+      dbDriver: config.dbDriver || 'sqlite',
+      dbHost: config.dbHost || '127.0.0.1',
+      dbPort: config.dbPort || (config.dbDriver === 'pgsql' ? '5432' : config.dbDriver === 'sqlite' ? '' : '3306'),
+      dbDatabase: config.dbDatabase || config.projectName || 'laravel',
+      dbUsername: config.dbUsername || 'root',
+      dbPassword: config.dbPassword || '',
+    });
+  }, [config.dbDriver, config.dbHost, config.dbPort, config.dbDatabase, config.dbUsername, config.dbPassword]);
+
+  const [migrationStatus, setMigrationStatus] = useState<'idle' | 'running' | 'success' | 'failed'>('idle');
+  const [terminalLogs, setTerminalLogs] = useState<string[]>([]);
+
+  const handleSaveConnection = (e: React.FormEvent) => {
+    e.preventDefault();
+    onChangeConfig({
+      ...config,
+      dbDriver: dbState.dbDriver as 'mysql' | 'sqlite' | 'pgsql',
+      dbHost: dbState.dbHost,
+      dbPort: dbState.dbPort,
+      dbDatabase: dbState.dbDatabase,
+      dbUsername: dbState.dbUsername,
+      dbPassword: dbState.dbPassword,
+    });
+    alert('Database connection successfully updated and mapped across Laravel config file models!');
+  };
+
+  const handleRunMigrations = () => {
+    setMigrationStatus('running');
+    setTerminalLogs([]);
+    const logs = [
+      `$ php artisan migrate:fresh --seed`,
+      `Connecting to database server using connection [${dbState.dbDriver}]...`,
+      `✓ Connection established successfully to [${dbState.dbDriver}://${dbState.dbHost}${dbState.dbPort ? ':' + dbState.dbPort : ''}/${dbState.dbDatabase}]`,
+      `INFO  Dropping all standard tables on database default schema ... Done!`,
+      `INFO  Preparing physical migrations mapping.`,
+      `  • database/migrations/2026_06_16_000000_create_cms_tables.php`,
+      `INFO  Running database migrations.`,
+      `  ✓ 2026_06_16_000000_create_cms_tables ................. 18.25ms DONE`,
+      `INFO  Sourcing and executing dynamic seed.`,
+      `  • database/seeders/DatabaseSeeder.php`,
+      `INFO  Seeding database records from custom model datasets.`,
+      `  ✓ Seeding App\\Models\\BlogPost records (${config.blogModels.length} rows) ... DONE`,
+      `  ✓ Seeding App\\Models\\Product records (${config.productModels.length} rows) ... DONE`,
+      `  ✓ Database\\Seeders\\DatabaseSeeder .................... 11.40ms DONE`,
+      ``,
+      `SUCCESS: Migrations executed! All database endpoints successfully compiled.`,
+      `⚡ Ready for query handling inside Eloquent App\\Models classes!`
+    ];
+
+    let current = 0;
+    const interval = setInterval(() => {
+      if (current < logs.length) {
+        setTerminalLogs(prev => [...prev, logs[current]]);
+        current++;
+      } else {
+        clearInterval(interval);
+        setMigrationStatus('success');
+      }
+    }, 400);
+  };
 
   // New item draft templates
   const [newBlog, setNewBlog] = useState<Partial<DynamicBlogModel>>({
@@ -142,6 +216,17 @@ export default function ContentDatabase({ config, onChangeConfig }: ContentDatab
           >
             <ShoppingBag className="w-3.5 h-3.5" />
             App\Models\Product ({config.productModels.length})
+          </button>
+          <button
+            onClick={() => setActiveTab('migrations')}
+            className={`flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-semibold rounded-lg transition-colors ${
+              activeTab === 'migrations'
+                ? 'bg-white text-indigo-700 shadow-sm'
+                : 'text-slate-500 hover:text-slate-800'
+            }`}
+          >
+            <Database className="w-3.5 h-3.5 text-orange-500" />
+            Connections & Migrations
           </button>
         </div>
       </div>
@@ -282,7 +367,7 @@ export default function ContentDatabase({ config, onChangeConfig }: ContentDatab
             )}
           </div>
         </div>
-      ) : (
+      ) : activeTab === 'products' ? (
         <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 align-start">
           {/* Create Product Form */}
           <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm h-fit">
@@ -338,7 +423,7 @@ export default function ContentDatabase({ config, onChangeConfig }: ContentDatab
               </div>
 
               <div>
-                <label className="block text-[11px] font-semibold text-slate-500 mb-1">Commercial Description details</label>
+                <label className="block text-[11px] font-semibold text-slate-505 mb-1">Commercial Description details</label>
                 <textarea
                   rows={3}
                   required
@@ -351,7 +436,7 @@ export default function ContentDatabase({ config, onChangeConfig }: ContentDatab
 
               <button
                 type="submit"
-                className="w-full bg-slate-900 hover:bg-indigo-650 active:bg-indigo-700 text-white rounded-lg py-2.5 text-xs font-semibold"
+                className="w-full bg-slate-900 hover:bg-indigo-650 active:bg-indigo-700 text-white rounded-lg py-2.5 text-xs font-semibold cursor-pointer"
               >
                 Insert Product seed row
               </button>
@@ -375,7 +460,7 @@ export default function ContentDatabase({ config, onChangeConfig }: ContentDatab
                   <div key={prod.id} className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm flex flex-col justify-between relative">
                     <button
                       onClick={() => handleDeleteProduct(prod.id)}
-                      className="absolute top-2 right-2 p-1.5 rounded-lg text-rose-500 hover:bg-rose-50 transition"
+                      className="absolute top-2 right-2 p-1.5 rounded-lg text-rose-500 hover:bg-rose-50 transition cursor-pointer"
                       title="Delete product row"
                     >
                       <Trash2 className="w-4 h-4" />
@@ -405,6 +490,182 @@ export default function ContentDatabase({ config, onChangeConfig }: ContentDatab
                 ))}
               </div>
             )}
+          </div>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 xl:grid-cols-2 gap-8 align-start">
+          {/* Card 1: Connection configurations */}
+          <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm space-y-5">
+            <div className="flex items-center gap-2 border-b border-slate-100 pb-3">
+              <Server className="w-5 h-5 text-indigo-650" />
+              <div>
+                <h4 className="font-bold text-slate-800 text-sm">Database Settings & Credentials</h4>
+                <p className="text-[11px] text-slate-400">Configure parameters for your compiled .env file</p>
+              </div>
+            </div>
+
+            <form onSubmit={handleSaveConnection} className="space-y-4">
+              <div>
+                <label className="block text-[11px] font-semibold text-slate-500 mb-1">Database Connection Driver (DB_CONNECTION)</label>
+                <select
+                  value={dbState.dbDriver}
+                  onChange={(e) => {
+                    const drv = e.target.value;
+                    let prt = '3306';
+                    if (drv === 'pgsql') prt = '5432';
+                    else if (drv === 'sqlite') prt = '';
+                    setDbState({ ...dbState, dbDriver: drv, dbPort: prt });
+                  }}
+                  className="w-full text-xs bg-slate-50 border border-slate-205 py-2 px-3 rounded-lg text-slate-750 font-medium"
+                >
+                  <option value="sqlite">SQLite (.sqlite database file)</option>
+                  <option value="mysql">MySQL Engine</option>
+                  <option value="pgsql">PostgreSQL Engine</option>
+                </select>
+              </div>
+
+              {dbState.dbDriver !== 'sqlite' && (
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-[11px] font-semibold text-slate-505 mb-1">Database Host (DB_HOST)</label>
+                    <input
+                      type="text"
+                      required
+                      value={dbState.dbHost}
+                      onChange={(e) => setDbState({ ...dbState, dbHost: e.target.value })}
+                      className="w-full text-xs bg-slate-50 border border-slate-205 rounded-lg px-3 py-2 outline-none font-mono"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[11px] font-semibold text-slate-505 mb-1">Database Port (DB_PORT)</label>
+                    <input
+                      type="text"
+                      required
+                      value={dbState.dbPort}
+                      onChange={(e) => setDbState({ ...dbState, dbPort: e.target.value })}
+                      className="w-full text-xs bg-slate-50 border border-slate-205 rounded-lg px-3 py-2 outline-none font-mono"
+                    />
+                  </div>
+                </div>
+              )}
+
+              <div>
+                <label className="block text-[11px] font-semibold text-slate-505 mb-1">
+                  {dbState.dbDriver === 'sqlite' ? 'SQLite Database File Path (DB_DATABASE)' : 'Database Name (DB_DATABASE)'}
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={dbState.dbDatabase}
+                  onChange={(e) => setDbState({ ...dbState, dbDatabase: e.target.value })}
+                  className="w-full text-xs bg-slate-50 border border-slate-205 rounded-lg px-3 py-2 outline-none font-mono"
+                />
+              </div>
+
+              {dbState.dbDriver !== 'sqlite' && (
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-[11px] font-semibold text-slate-505 mb-1">Database Username (DB_USERNAME)</label>
+                    <input
+                      type="text"
+                      required
+                      value={dbState.dbUsername}
+                      onChange={(e) => setDbState({ ...dbState, dbUsername: e.target.value })}
+                      className="w-full text-xs bg-slate-50 border border-slate-205 rounded-lg px-3 py-2 outline-none font-mono"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[11px] font-semibold text-slate-505 mb-1">Database Password (DB_PASSWORD)</label>
+                    <input
+                      type="password"
+                      value={dbState.dbPassword}
+                      onChange={(e) => setDbState({ ...dbState, dbPassword: e.target.value })}
+                      className="w-full text-xs bg-slate-50 border border-slate-205 rounded-lg px-3 py-2 outline-none font-mono"
+                      placeholder="Optional"
+                    />
+                  </div>
+                </div>
+              )}
+
+              <button
+                type="submit"
+                className="w-full bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 text-white rounded-lg py-2.5 text-xs font-semibold flex items-center justify-center gap-1.5 transition-all text-center cursor-pointer shadow-sm"
+              >
+                <Save className="w-3.5 h-3.5" />
+                Apply Database Config inside .env
+              </button>
+            </form>
+          </div>
+
+          {/* Card 2: Interactive migrations simulator */}
+          <div className="bg-slate-900 border border-slate-800 rounded-xl p-6 shadow-md flex flex-col justify-between text-slate-200">
+            <div className="space-y-4">
+              <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+                <div className="flex items-center gap-2">
+                  <Terminal className="w-5 h-5 text-indigo-400" />
+                  <div>
+                    <h4 className="font-bold text-white text-sm">Visual Migrations Console</h4>
+                    <p className="text-[11px] text-slate-400">Initialize and seed the configured schemas</p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={handleRunMigrations}
+                  disabled={migrationStatus === 'running'}
+                  className="bg-indigo-650 hover:bg-indigo-600 disabled:opacity-50 active:bg-indigo-700 text-white shadow-sm flex items-center gap-1.5 py-1.5 px-3 rounded-lg text-xs font-bold transition-all cursor-pointer"
+                >
+                  {migrationStatus === 'running' ? (
+                    <>
+                      <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                      Migrating...
+                    </>
+                  ) : (
+                    <>
+                      <Play className="w-3.5 h-3.5 fill-current text-white" />
+                      Run Migrations & Seed
+                    </>
+                  )}
+                </button>
+              </div>
+
+              {/* Terminal Screen */}
+              <div className="bg-slate-950 border border-slate-800 rounded-xl h-64 p-4 font-mono text-[11px] text-slate-300 overflow-y-auto space-y-1 block align-top">
+                {terminalLogs.length === 0 && (
+                  <div className="h-full flex flex-col items-center justify-center text-center text-slate-500 space-y-2">
+                    <CheckCircle2 className="w-8 h-8 text-indigo-500/25" />
+                    <p>Click "Run Migrations & Seed" to test database schema mapping</p>
+                    <p className="text-[10px] text-slate-650">Simulates mapping the schema directly onto [ {dbState.dbDriver} ] tables</p>
+                  </div>
+                )}
+                {terminalLogs.map((log, idx) => {
+                  let textClass = 'text-slate-300';
+                  if (log.startsWith('$')) textClass = 'text-indigo-400 font-semibold';
+                  else if (log.startsWith('✓') || log.startsWith('SUCCESS')) textClass = 'text-emerald-400 font-semibold';
+                  else if (log.startsWith('INFO')) textClass = 'text-blue-400';
+                  else if (log.startsWith('CRITICAL')) textClass = 'text-amber-400';
+                  else if (log.startsWith('⚡')) textClass = 'text-orange-405 font-semibold';
+                  
+                  return (
+                    <div key={idx} className={`${textClass} leading-relaxed break-all`}>
+                      {log}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Local dev terminal copy helper */}
+            <div className="mt-4 pt-4 border-t border-slate-800 space-y-1.5 text-left">
+              <span className="text-[10px] font-bold text-slate-400 block uppercase tracking-wider">Local Setup Production Commands</span>
+              <p className="text-[11px] text-slate-400 leading-normal">
+                To migrate and seed this dynamic Bootstrap CMS content on your local system, run these commands inside the root directory:
+              </p>
+              <pre className="p-2.5 bg-slate-950 border border-slate-800 rounded-lg text-[10px] text-slate-200 font-mono whitespace-pre overflow-x-auto text-left">
+{`# 1. Config environment details inside .env
+# 2. Run schema execution and seed simulated rows
+php artisan migrate --seed`}
+              </pre>
+            </div>
           </div>
         </div>
       )}

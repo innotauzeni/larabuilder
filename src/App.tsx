@@ -21,7 +21,8 @@ import {
   Play, 
   AlertCircle, 
   RefreshCw,
-  FolderOpen
+  FolderOpen,
+  Edit3
 } from 'lucide-react';
 
 export default function App() {
@@ -100,71 +101,68 @@ export default function App() {
   const selectedBlock = activePage.blocks.find(b => b.id === selectedBlockId);
 
   return (
-    <div id="cms-main-root" className="min-h-screen bg-slate-50 flex flex-col font-sans select-none antialiased">
+    <div id="cms-main-root" className="min-h-screen bg-[#0F172A] flex flex-col font-sans select-none antialiased text-slate-300">
       {/* 1. Header Navigation Bar */}
-      <nav className="bg-slate-900 border-b border-slate-800 text-slate-100 flex-shrink-0">
+      <nav className="bg-slate-800/80 backdrop-blur-sm border-b border-slate-700/50 text-slate-100 flex-shrink-0">
         <div className="max-w-7xl mx-auto px-4 lg:px-6">
-          <div className="flex justify-between h-16 items-center">
+          <div className="flex justify-between h-14 items-center">
             {/* Logo */}
             <div className="flex items-center gap-2.5">
-              <div className="w-9 h-9 rounded-xl bg-indigo-600 flex items-center justify-center font-bold text-white shadow-md text-base border border-indigo-500 animate-pulse">
-                LB
+              <div className="w-8 h-8 rounded-lg bg-indigo-600 flex items-center justify-center font-bold text-white shadow-lg shadow-indigo-500/20 text-sm">
+                L
               </div>
+              <div className="h-4 w-px bg-slate-700"></div>
               <div>
-                <h1 className="font-extrabold text-sm tracking-tight text-white flex items-center gap-1.5 leading-none">
+                <h1 className="font-semibold text-sm tracking-tight text-white flex items-center gap-1.5 leading-none">
                   LaraBoot Studio CMS
                 </h1>
-                <span className="text-[10px] text-slate-400 font-mono tracking-wide block mt-1">
-                  Laravel 11 & Bootstrap 5 Visual Compiler
-                </span>
               </div>
             </div>
 
             {/* Menu Tabs */}
-            <div className="flex h-full items-center">
-              <button
-                onClick={() => setActiveTab('visual')}
-                className={`h-full px-4 text-xs font-semibold flex items-center gap-1.5 border-b-2 transition-all ${
-                  activeTab === 'visual'
-                    ? 'border-indigo-500 bg-slate-800/60 text-white'
-                    : 'border-transparent text-slate-400 hover:text-slate-100'
-                }`}
-              >
-                <Layout className="w-4 h-4" />
-                Visual Designer
-              </button>
-              <button
-                onClick={() => setActiveTab('code')}
-                className={`h-full px-4 text-xs font-semibold flex items-center gap-1.5 border-b-2 transition-all ${
-                  activeTab === 'code'
-                    ? 'border-indigo-500 bg-slate-800/60 text-indigo-300'
-                    : 'border-transparent text-slate-400 hover:text-indigo-300'
-                }`}
-              >
-                <Code className="w-4 h-4" />
-                Page Code Controllers
-              </button>
-              <button
-                onClick={() => setActiveTab('database')}
-                className={`h-full px-4 text-xs font-semibold flex items-center gap-1.5 border-b-2 transition-all ${
-                  activeTab === 'database'
-                    ? 'border-indigo-500 bg-slate-800/60 text-indigo-300'
-                    : 'border-transparent text-slate-400 hover:text-slate-100'
-                }`}
-              >
-                <Database className="w-4 h-4" />
-                Dynamic CMS Database
-              </button>
+            <div className="flex h-full items-center gap-1">
+              <div className="flex rounded-md bg-slate-900/50 p-1">
+                <button
+                  onClick={() => setActiveTab('visual')}
+                  className={`rounded px-3 py-1 text-[11px] font-medium transition-colors flex items-center gap-1 ${
+                    activeTab === 'visual'
+                      ? 'bg-slate-700 text-white'
+                      : 'text-slate-400 hover:text-white'
+                  }`}
+                >
+                  <Layout className="w-3 h-3" />
+                  Editor
+                </button>
+                <button
+                  onClick={() => setActiveTab('code')}
+                  className={`rounded px-3 py-1 text-[11px] font-medium transition-colors flex items-center gap-1 ${
+                    activeTab === 'code'
+                      ? 'bg-slate-700 text-white'
+                      : 'text-slate-400 hover:text-white'
+                  }`}
+                >
+                  <Code className="w-3 h-3" />
+                  Logic & Views
+                </button>
+                <button
+                  onClick={() => setActiveTab('database')}
+                  className={`rounded px-3 py-1 text-[11px] font-medium transition-colors flex items-center gap-1 ${
+                    activeTab === 'database'
+                      ? 'bg-slate-700 text-white'
+                      : 'text-slate-400 hover:text-white'
+                  }`}
+                >
+                  <Database className="w-3 h-3" />
+                  CMS Database
+                </button>
+              </div>
+
               <button
                 onClick={() => setActiveTab('export')}
-                className={`h-full px-4 text-xs font-semibold flex items-center gap-1.5 border-b-2 transition-all ${
-                  activeTab === 'export'
-                    ? 'border-indigo-500 bg-slate-800/60 text-emerald-400'
-                    : 'border-transparent text-slate-400 hover:text-slate-100'
-                }`}
+                className={`rounded-md bg-indigo-600 hover:bg-indigo-700 font-semibold px-4 py-1.5 text-xs text-white shadow-lg shadow-indigo-600/30 flex items-center gap-1.5 transition-all ml-2`}
               >
-                <Download className="w-4 h-4" />
-                Exporter CLI
+                <Download className="w-3.5 h-3.5" />
+                Publish & Export
               </button>
             </div>
           </div>
@@ -175,15 +173,15 @@ export default function App() {
       {activeTab === 'visual' ? (
         <div className="flex-1 flex flex-col overflow-hidden min-h-0">
           {/* Top Panel: AI Genie Generator Prompts */}
-          <div className="bg-gradient-to-r from-slate-900 to-indigo-950/95 border-b border-indigo-900/40 py-3.5 px-4 lg:px-6 flex-shrink-0 text-white">
+          <div className="bg-slate-900/40 border-b border-slate-700/50 py-3 px-4 lg:px-6 flex-shrink-0 text-white">
             <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4">
               <div className="flex items-center gap-3">
-                <div className="bg-indigo-600/30 p-2 rounded-xl border border-indigo-500">
-                  <Sparkles className="w-5 h-5 text-indigo-400 animate-spin" />
+                <div className="bg-indigo-600/20 p-1.5 rounded-lg border border-indigo-500/30">
+                  <Sparkles className="w-4 h-4 text-indigo-400 animate-pulse" />
                 </div>
                 <div>
-                  <h3 className="font-bold text-xs text-white uppercase tracking-wider">AI Layout Genie</h3>
-                  <p className="text-[11px] text-slate-400 mt-0.5">Let Gemini 3.5 formulate your dynamic Bootstrap layout sections</p>
+                  <h3 className="font-bold text-[10px] uppercase tracking-widest text-slate-400">AI Layout Genie</h3>
+                  <p className="text-[11px] text-slate-500 mt-0.5">Gemini instantly designs custom landing sections</p>
                 </div>
               </div>
 
@@ -193,24 +191,24 @@ export default function App() {
                   type="text"
                   value={aiPrompt}
                   onChange={(e) => setAiPrompt(e.target.value)}
-                  className="flex-1 text-xs bg-slate-950/80 border border-indigo-900/65 rounded-xl px-4 py-2.5 text-slate-100 placeholder-slate-500 focus:outline-none focus:border-indigo-500"
+                  className="flex-1 text-[11px] bg-slate-950/80 border border-slate-750 rounded-lg px-3 py-1.5 text-slate-100 placeholder-slate-500 focus:outline-none focus:border-indigo-500"
                   placeholder="e.g. A dental clinic with schedule, features grid, pricing tier and team reviews..."
                 />
                 <button
                   type="button"
                   onClick={handleAiGenerateLayout}
                   disabled={aiGenerating}
-                  className="bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 disabled:opacity-50 text-white px-5 rounded-xl text-xs font-semibold transition-all flex items-center gap-1.5 shadow"
+                  className="bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 disabled:opacity-50 text-white px-4 rounded-lg text-xs font-semibold transition-all flex items-center gap-1.5 shadow"
                 >
                   {aiGenerating ? (
                     <>
-                      <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                      Consulting Genie...
+                      <RefreshCw className="w-3 h-3 animate-spin" />
+                      Designing...
                     </>
                   ) : (
                     <>
-                      <Sparkles className="w-3.5 h-3.5" />
-                      Generate Page
+                      <Sparkles className="w-3 h-3" />
+                      Build Section
                     </>
                   )}
                 </button>
@@ -220,7 +218,7 @@ export default function App() {
 
           <div className="flex-1 flex flex-col lg:flex-row overflow-hidden min-h-0">
             {/* Left config layout rail */}
-            <div className="w-full lg:w-80 border-r border-slate-200 bg-slate-50 p-6 overflow-y-auto max-h-[300px] lg:max-h-full">
+            <div className="w-full lg:w-80 border-r border-slate-700/50 bg-slate-800/40 p-6 overflow-y-auto max-h-[300px] lg:max-h-full">
               <SidebarEditor
                 config={config}
                 onChangeConfig={setConfig}
@@ -230,18 +228,18 @@ export default function App() {
             </div>
 
             {/* Middle visual preview wrapper */}
-            <div className="flex-1 flex flex-col bg-slate-900 overflow-hidden relative">
+            <div className="flex-1 flex flex-col bg-[#020617] overflow-hidden relative">
               {/* Width switches */}
-              <div className="bg-slate-950/60 p-2.5 border-b border-slate-800/60 flex items-center justify-between z-10 flex-shrink-0">
-                <span className="text-[10px] text-slate-400 font-mono tracking-wider ml-1">
-                  PREVIEW STAGE WIDTH MODIFIER
+              <div className="bg-slate-900/60 p-2.5 border-b border-slate-700/50 flex items-center justify-between z-10 flex-shrink-0">
+                <span className="text-[10px] text-slate-500 font-semibold tracking-wider ml-1 uppercase">
+                  Workspace Visual Canvas
                 </span>
                 
-                <div className="flex bg-slate-900 border border-slate-800 rounded-lg p-0.5">
+                <div className="flex bg-slate-950/80 border border-slate-700/50 rounded-lg p-0.5">
                   <button
                     onClick={() => setViewportWidth('desktop')}
                     className={`p-1.5 rounded-md transition-colors ${
-                      viewportWidth === 'desktop' ? 'bg-indigo-600 text-white' : 'text-slate-400 hover:text-slate-100'
+                      viewportWidth === 'desktop' ? 'bg-indigo-650 text-white' : 'text-slate-500 hover:text-slate-100'
                     }`}
                     title="Desktop Preview 100%"
                   >
@@ -250,7 +248,7 @@ export default function App() {
                   <button
                     onClick={() => setViewportWidth('tablet')}
                     className={`p-1.5 rounded-md transition-colors ${
-                      viewportWidth === 'tablet' ? 'bg-indigo-600 text-white' : 'text-slate-400 hover:text-slate-100'
+                      viewportWidth === 'tablet' ? 'bg-indigo-650 text-white' : 'text-slate-500 hover:text-slate-100'
                     }`}
                     title="Tablet Preview 768px"
                   >
@@ -259,7 +257,7 @@ export default function App() {
                   <button
                     onClick={() => setViewportWidth('mobile')}
                     className={`p-1.5 rounded-md transition-colors ${
-                      viewportWidth === 'mobile' ? 'bg-indigo-600 text-white' : 'text-slate-400 hover:text-slate-100'
+                      viewportWidth === 'mobile' ? 'bg-indigo-650 text-white' : 'text-slate-500 hover:text-slate-100'
                     }`}
                     title="Mobile Portrait 375px"
                   >
@@ -269,18 +267,20 @@ export default function App() {
               </div>
 
               {/* Viewport render block */}
-              <div className="flex-1 overflow-hidden flex flex-col relative">
-                <CanvasPreview
-                  config={config}
-                  selectedBlockId={selectedBlockId}
-                  onSelectBlock={setSelectedBlockId}
-                  viewportWidth={viewportWidth}
-                />
+              <div className="flex-1 overflow-hidden flex flex-col relative p-6">
+                <div className="flex-1 overflow-hidden rounded-t-xl shadow-[0_0_50px_rgba(0,0,0,0.5)]">
+                  <CanvasPreview
+                    config={config}
+                    selectedBlockId={selectedBlockId}
+                    onSelectBlock={setSelectedBlockId}
+                    viewportWidth={viewportWidth}
+                  />
+                </div>
               </div>
             </div>
 
             {/* Right configuration properties panel */}
-            <div className="w-full lg:w-80 border-l border-slate-200 bg-white p-6 overflow-y-auto max-h-[300px] lg:max-h-full">
+            <div className="w-full lg:w-80 border-l border-slate-700/50 bg-slate-800/40 p-6 overflow-y-auto max-h-[300px] lg:max-h-full">
               {selectedBlock ? (
                 <BlockEditor
                   block={selectedBlock}
@@ -288,31 +288,57 @@ export default function App() {
                 />
               ) : (
                 <div className="h-full flex flex-col items-center justify-center text-center p-4">
-                  <div className="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center mb-3">
-                    <Edit3 className="w-6 h-6 text-slate-400" />
+                  <div className="w-12 h-12 rounded-lg border border-slate-700/50 bg-slate-900/40 flex items-center justify-center mb-3 text-indigo-400">
+                    <Edit3 className="w-5 h-5" />
                   </div>
-                  <h4 className="font-semibold text-sm text-slate-700">No Block Selected</h4>
-                  <p className="text-xs text-slate-400 mt-1 lines-clamp">
-                    Click any highlighted section in the central stage preview or select inside the sidebar list layout to edit style properties.
+                  <h4 className="font-bold text-[10px] uppercase tracking-widest text-[#6366F1]">Style Inspector</h4>
+                  <p className="text-xs text-slate-400 mt-2 leading-relaxed">
+                    Click any element inside the mock canvas to edit colors, copy, spacing, and dynamic parameters.
                   </p>
+                  <div className="mt-8 w-full">
+                    <div className="rounded-lg bg-indigo-500/10 p-4 border border-indigo-500/20 text-left">
+                      <h4 className="text-[11px] font-bold text-indigo-300 uppercase mb-2">Blade Context</h4>
+                      <pre className="text-[10px] text-indigo-200/70 font-mono leading-relaxed overflow-x-auto">
+{`@extends('layouts.app')
+@section('content')
+  <x-laravel-live />
+@endsection`}
+                      </pre>
+                    </div>
+                  </div>
                 </div>
               )}
             </div>
           </div>
         </div>
       ) : activeTab === 'code' ? (
-        <div className="flex-1 flex flex-col min-h-0">
+        <div className="flex-1 flex flex-col min-h-0 bg-[#0F172A]">
           <LaravelViewer config={config} />
         </div>
       ) : activeTab === 'database' ? (
-        <div className="flex-1 flex flex-col min-h-0">
+        <div className="flex-1 flex flex-col min-h-0 bg-[#0F172A]">
           <ContentDatabase config={config} onChangeConfig={setConfig} />
         </div>
       ) : (
-        <div className="flex-1 flex flex-col min-h-0">
+        <div className="flex-1 flex flex-col min-h-0 bg-[#0F172A]">
           <ProjectExporter config={config} />
         </div>
       )}
+
+      {/* 3. Sleek Footer metrics panel */}
+      <footer className="flex h-8 shrink-0 items-center justify-between border-t border-slate-700/50 bg-slate-800/80 px-4 text-slate-400">
+        <div className="flex items-center gap-4 text-[10px] font-medium uppercase tracking-widest">
+          <span className="flex items-center gap-1.5 text-green-400">
+            <span className="h-1.5 w-1.5 rounded-full bg-green-500 animate-pulse"></span>
+            Connected
+          </span>
+          <span>Laravel 11.x</span>
+          <span>PHP 8.3 VM</span>
+        </div>
+        <div className="text-[10px] text-slate-500 font-mono">
+          Stage Selection: <span className="text-white font-semibold">{activePage.title} &gt; {selectedBlock ? selectedBlock.type : 'none'}</span>
+        </div>
+      </footer>
     </div>
   );
 }
