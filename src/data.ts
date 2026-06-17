@@ -234,8 +234,48 @@ export const createInitialConfig = (): WebDesignConfig => {
     colorPalette: COLOR_PALETTES[0],
     laravelVersion: 'v11.x',
     dbDriver: 'sqlite',
+    exportPlatform: 'laravel',
     blogModels: DEFAULT_BLOGS,
     productModels: DEFAULT_PRODUCTS,
+    bladeTemplateStyle: 'landing',
+    enableSpatiePermissions: true,
+    enableAuditTrail: true,
+    enableDynamicMenu: true,
+    modules: [
+      {
+        id: 'mod-1',
+        name: 'CMS Core',
+        slug: 'cms-core',
+        icon: 'LayoutTemplate',
+        order: 1,
+        submodules: [
+          { id: 'sub-1-1', name: 'Web Pages', slug: 'web-pages', url: '/admin/pages', icon: 'Globe', permission: 'manage-pages', order: 1 },
+          { id: 'sub-1-2', name: 'Dynamic Blocks', slug: 'blocks', url: '/admin/blocks', icon: 'Cpu', permission: 'manage-blocks', order: 2 },
+          { id: 'sub-1-3', name: 'Blog Posts', slug: 'blogs', url: '/admin/blogs', icon: 'Sparkles', permission: 'manage-blogs', order: 3 }
+        ]
+      },
+      {
+        id: 'mod-2',
+        name: 'Security Shield',
+        slug: 'security',
+        icon: 'Shield',
+        order: 2,
+        submodules: [
+          { id: 'sub-2-1', name: 'Role Manager', slug: 'roles', url: '/admin/roles', icon: 'Users', permission: 'manage-roles', order: 1 },
+          { id: 'sub-2-2', name: 'Spatie Permissions', slug: 'permissions', url: '/admin/permissions', icon: 'Zap', permission: 'manage-permissions', order: 2 }
+        ]
+      },
+      {
+        id: 'mod-3',
+        name: 'Audit Trail',
+        slug: 'audits',
+        icon: 'Database',
+        order: 3,
+        submodules: [
+          { id: 'sub-3-1', name: 'System Logs', slug: 'logs', url: '/admin/logs', icon: 'HardDrive', permission: 'view-audit-logs', order: 1 }
+        ]
+      }
+    ],
     pages: [
       {
         id: 'home',
@@ -243,6 +283,25 @@ export const createInitialConfig = (): WebDesignConfig => {
         slug: 'index',
         blocks: createDefaultBlocks('LaraBoot Core')
       }
+    ],
+    spatiePermissions: [
+      { id: 'p1', name: 'blog_posts.create', module: 'blog_posts', action: 'create', description: 'Create blog posts' },
+      { id: 'p2', name: 'blog_posts.read', module: 'blog_posts', action: 'read', description: 'View blog posts' },
+      { id: 'p3', name: 'blog_posts.update', module: 'blog_posts', action: 'update', description: 'Update blog posts' },
+      { id: 'p4', name: 'blog_posts.delete', module: 'blog_posts', action: 'delete', description: 'Delete blog posts' },
+      { id: 'p5', name: 'products.create', module: 'products', action: 'create', description: 'Add new products' },
+      { id: 'p6', name: 'products.read', module: 'products', action: 'read', description: 'Browse products catalog' },
+      { id: 'p7', name: 'products.update', module: 'products', action: 'update', description: 'Edit existing products' },
+      { id: 'p8', name: 'products.delete', module: 'products', action: 'delete', description: 'Remove products' },
+      { id: 'p9', name: 'pages.create', module: 'pages', action: 'create', description: 'Create web pages' },
+      { id: 'p10', name: 'pages.read', module: 'pages', action: 'read', description: 'Access web pages panel' },
+      { id: 'p11', name: 'pages.update', module: 'pages', action: 'update', description: 'Modify web page structures' },
+      { id: 'p12', name: 'pages.delete', module: 'pages', action: 'delete', description: 'Delete custom pages' },
+    ],
+    spatieRoles: [
+      { id: 'r1', name: 'Administrator', description: 'System Administrator with full access rights', permissions: ['blog_posts.create', 'blog_posts.read', 'blog_posts.update', 'blog_posts.delete', 'products.create', 'products.read', 'products.update', 'products.delete', 'pages.create', 'pages.read', 'pages.update', 'pages.delete'] },
+      { id: 'r2', name: 'Editor', description: 'Content Editor who can manage blogs and products, but cannot delete or modify structural pages', permissions: ['blog_posts.create', 'blog_posts.read', 'blog_posts.update', 'products.create', 'products.read', 'products.update', 'pages.read'] },
+      { id: 'r3', name: 'User', description: 'Regular User with basic read-only rights to browse posts and products', permissions: ['blog_posts.read', 'products.read'] },
     ]
   };
 };

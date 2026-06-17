@@ -193,6 +193,43 @@ export interface DynamicProductModel {
   inStock: boolean;
 }
 
+export type ExporterPlatform = 'laravel' | 'dotnet';
+export type BladeTemplateStyle = 'landing' | 'admin_dashboard' | 'business_portal' | 'laravel_breeze' | 'laravel_ui';
+
+export interface MenuSubmodule {
+  id: string;
+  name: string;
+  slug: string;
+  url: string;
+  icon: string;
+  permission: string;
+  order: number;
+}
+
+export interface MenuModule {
+  id: string;
+  name: string;
+  slug: string;
+  icon: string;
+  order: number;
+  submodules: MenuSubmodule[];
+}
+
+export interface SpatieRole {
+  id: string;
+  name: string;
+  description?: string;
+  permissions: string[]; // List of permission names
+}
+
+export interface SpatiePermission {
+  id: string;
+  name: string;
+  module: string; // e.g. 'blog_posts', 'products', 'pages', etc.
+  action: 'create' | 'read' | 'update' | 'delete' | 'manage';
+  description?: string;
+}
+
 export interface WebDesignConfig {
   projectName: string;
   activePageId: string;
@@ -207,4 +244,13 @@ export interface WebDesignConfig {
   dbDatabase?: string;
   dbUsername?: string;
   dbPassword?: string;
+  exportPlatform?: ExporterPlatform;
+  // Dynamic Architecture Features
+  bladeTemplateStyle: BladeTemplateStyle;
+  enableSpatiePermissions: boolean;
+  enableAuditTrail: boolean;
+  enableDynamicMenu: boolean;
+  modules: MenuModule[];
+  spatieRoles?: SpatieRole[];
+  spatiePermissions?: SpatiePermission[];
 }

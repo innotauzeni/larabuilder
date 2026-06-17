@@ -106,16 +106,44 @@ export default function App() {
       <nav className="bg-slate-800/80 backdrop-blur-sm border-b border-slate-700/50 text-slate-100 flex-shrink-0">
         <div className="max-w-7xl mx-auto px-4 lg:px-6">
           <div className="flex justify-between h-14 items-center">
-            {/* Logo */}
-            <div className="flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-lg bg-indigo-600 flex items-center justify-center font-bold text-white shadow-lg shadow-indigo-500/20 text-sm">
-                L
+            {/* Left Brand with Target Platform Switcher */}
+            <div className="flex items-center gap-4">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-lg bg-indigo-650 bg-indigo-600 flex items-center justify-center font-bold text-white shadow-lg shadow-indigo-500/20 text-sm">
+                  L
+                </div>
+                <div className="h-4 w-px bg-slate-700"></div>
+                <div>
+                  <h1 className="font-semibold text-sm tracking-tight text-white leading-none">
+                    LaraBoot Studio CMS
+                  </h1>
+                </div>
               </div>
-              <div className="h-4 w-px bg-slate-700"></div>
-              <div>
-                <h1 className="font-semibold text-sm tracking-tight text-white flex items-center gap-1.5 leading-none">
-                  LaraBoot Studio CMS
-                </h1>
+
+              {/* Exporter Target Stack selector - DaraERP C# Compliance rule integration */}
+              <div className="hidden sm:flex items-center gap-1 bg-slate-950/80 p-0.5 rounded-lg border border-slate-700/50">
+                <button
+                  type="button"
+                  onClick={() => setConfig({ ...config, exportPlatform: 'laravel' })}
+                  className={`px-2.5 py-1 text-[9px] font-bold rounded-md transition-all uppercase tracking-wider cursor-pointer ${
+                    (config.exportPlatform || 'laravel') === 'laravel'
+                      ? 'bg-indigo-600 text-white shadow'
+                      : 'text-slate-400 hover:text-slate-200'
+                  }`}
+                >
+                  Laravel Stack
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setConfig({ ...config, exportPlatform: 'dotnet' })}
+                  className={`px-2.5 py-1 text-[9px] font-bold rounded-md transition-all uppercase tracking-wider cursor-pointer ${
+                    config.exportPlatform === 'dotnet'
+                      ? 'bg-indigo-600 text-white shadow'
+                      : 'text-slate-400 hover:text-slate-200'
+                  }`}
+                >
+                  C# DaraERP Clean
+                </button>
               </div>
             </div>
 
@@ -332,8 +360,17 @@ export default function App() {
             <span className="h-1.5 w-1.5 rounded-full bg-green-500 animate-pulse"></span>
             Connected
           </span>
-          <span>Laravel 11.x</span>
-          <span>PHP 8.3 VM</span>
+          {config.exportPlatform === 'dotnet' ? (
+            <>
+              <span className="text-cyan-400 font-bold">.NET 8.0 Solution</span>
+              <span>DaraERP v2.0 Rule engine</span>
+            </>
+          ) : (
+            <>
+              <span>Laravel 11.x</span>
+              <span>PHP 8.3 VM</span>
+            </>
+          )}
         </div>
         <div className="text-[10px] text-slate-500 font-mono">
           Stage Selection: <span className="text-white font-semibold">{activePage.title} &gt; {selectedBlock ? selectedBlock.type : 'none'}</span>

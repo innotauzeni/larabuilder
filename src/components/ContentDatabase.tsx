@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { WebDesignConfig, DynamicBlogModel, DynamicProductModel } from '../types';
-import { Plus, Trash2, Database, BookOpen, ShoppingBag, Calendar, User, Tag, HelpCircle, Package, Archive, Terminal, Server, CheckCircle2, Play, Save, RefreshCw } from 'lucide-react';
+import { WebDesignConfig, DynamicBlogModel, DynamicProductModel, SpatieRole, SpatiePermission } from '../types';
+import { Plus, Trash2, Database, BookOpen, ShoppingBag, Calendar, User, Tag, HelpCircle, Package, Archive, Terminal, Server, CheckCircle2, Play, Save, RefreshCw, Shield, Key, Lock, Settings, Edit, Users, Check } from 'lucide-react';
 
 interface ContentDatabaseProps {
   config: WebDesignConfig;
@@ -8,7 +8,7 @@ interface ContentDatabaseProps {
 }
 
 export default function ContentDatabase({ config, onChangeConfig }: ContentDatabaseProps) {
-  const [activeTab, setActiveTab] = useState<'blogs' | 'products' | 'migrations'>('blogs');
+  const [activeTab, setActiveTab] = useState<'blogs' | 'products' | 'migrations' | 'spatie'>('blogs');
 
   // Database Connection settings state
   const [dbState, setDbState] = useState({
@@ -34,6 +34,11 @@ export default function ContentDatabase({ config, onChangeConfig }: ContentDatab
 
   const [migrationStatus, setMigrationStatus] = useState<'idle' | 'running' | 'success' | 'failed'>('idle');
   const [terminalLogs, setTerminalLogs] = useState<string[]>([]);
+  
+  // Visual Inspection States
+  const [inspectTable, setInspectTable] = useState<'blog_posts' | 'products'>('blog_posts');
+  const [inspectView, setInspectView] = useState<'data' | 'structure'>('data');
+  const [dbSearch, setDbSearch] = useState('');
 
   const handleSaveConnection = (e: React.FormEvent) => {
     e.preventDefault();
@@ -101,6 +106,141 @@ export default function ContentDatabase({ config, onChangeConfig }: ContentDatab
     imageUrl: 'https://images.unsplash.com/photo-1523474253046-8cd2748b5fd2?auto=format&fit=crop&w=600&q=80',
     inStock: true
   });
+
+  // Spatie Roles & Permissions States
+  const [selectedRoleId, setSelectedRoleId] = useState<string>('r1');
+  const [newRoleName, setNewRoleName] = useState('');
+  const [newRoleDesc, setNewRoleDesc] = useState('');
+  const [newPermName, setNewPermName] = useState('');
+  const [newPermModule, setNewPermModule] = useState('blog_posts');
+  const [newPermAction, setNewPermAction] = useState<'create' | 'read' | 'update' | 'delete' | 'manage'>('read');
+  const [newPermDesc, setNewPermDesc] = useState('');
+
+  // Sourcing current list with safeguards in case they are undefined on the first load
+  const currentRoles: SpatieRole[] = config.spatieRoles || [
+    { id: 'r1', name: 'Administrator', description: 'System Administrator with full access rights', permissions: ['blog_posts.create', 'blog_posts.read', 'blog_posts.update', 'blog_posts.delete', 'products.create', 'products.read', 'products.update', 'products.delete', 'pages.create', 'pages.read', 'pages.update', 'pages.delete'] },
+    { id: 'r2', name: 'Editor', description: 'Content Editor who can manage blogs and products, but cannot delete or modify structural pages', permissions: ['blog_posts.create', 'blog_posts.read', 'blog_posts.update', 'products.create', 'products.read', 'products.update', 'pages.read'] },
+    { id: 'r3', name: 'User', description: 'Regular User with basic read-only rights to browse posts and products', permissions: ['blog_posts.read', 'products.read'] }
+  ];
+
+  const currentPermissions: SpatiePermission[] = config.spatiePermissions || [
+    { id: 'p1', name: 'blog_posts.create', module: 'blog_posts', action: 'create', description: 'Create blog posts' },
+    { id: 'p2', name: 'blog_posts.read', module: 'blog_posts', action: 'read', description: 'View blog posts' },
+    { id: 'p3', name: 'blog_posts.update', module: 'blog_posts', action: 'update', description: 'Update blog posts' },
+    { id: 'p4', name: 'blog_posts.delete', module: 'blog_posts', action: 'delete', description: 'Delete blog posts' },
+    { id: 'p5', name: 'products.create', module: 'products', action: 'create', description: 'Add new products' },
+    { id: 'p6', name: 'products.read', module: 'products', action: 'read', description: 'Browse products catalog' },
+    { id: 'p7', name: 'products.update', module: 'products', action: 'update', description: 'Edit existing products' },
+    { id: 'p8', name: 'products.delete', module: 'products', action: 'delete', description: 'Remove products' },
+    { id: 'p9', name: 'pages.create', module: 'pages', action: 'create', description: 'Create web pages' },
+    { id: 'p10', name: 'pages.read', module: 'pages', action: 'read', description: 'Access web pages panel' },
+    { id: 'p11', name: 'pages.update', module: 'pages', action: 'update', description: 'Modify web page structures' },
+    { id: 'p12', name: 'pages.delete', module: 'pages', action: 'delete', description: 'Delete custom pages' }
+  ];
+
+  const handleUpdateRolesAndPermissions = (newRoles: SpatieRole[], newPerms: SpatiePermission[]) => {
+    onChangeConfig({
+      ...config,
+      spatieRoles: newRoles,
+      spatiePermissions: newPerms
+    });
+  };
+
+  const handleAddCustomRole = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newRoleName.trim()) return;
+    const cleanName = newRoleName.trim();
+    if (currentRoles.some(r => r.name.toLowerCase() === cleanName.toLowerCase())) {
+      alert(`The role [${cleanName}] already exists in this configuration.`);
+      return;
+    }
+    const createdRole: SpatieRole = {
+      id: `role-${Math.random()}`,
+      name: cleanName,
+      description: newRoleDesc.trim() || 'Custom Spatie ACL user role.',
+      permissions: []
+    };
+    const updatedRoles = [...currentRoles, createdRole];
+    handleUpdateRolesAndPermissions(updatedRoles, currentPermissions);
+    setSelectedRoleId(createdRole.id);
+    setNewRoleName('');
+    setNewRoleDesc('');
+  };
+
+  const handleDeleteCustomRole = (id: string, name: string) => {
+    if (name === 'Administrator') {
+      alert('Cannot delete the root [Administrator] role as it protects core platform security rules.');
+      return;
+    }
+    const updatedRoles = currentRoles.filter(r => r.id !== id);
+    handleUpdateRolesAndPermissions(updatedRoles, currentPermissions);
+    if (selectedRoleId === id) {
+      setSelectedRoleId(currentRoles[0]?.id || '');
+    }
+  };
+
+  const handleTogglePermission = (roleId: string, permName: string) => {
+    const updatedRoles = currentRoles.map(role => {
+      if (role.id !== roleId) return role;
+      const alreadyHas = role.permissions.includes(permName);
+      const newPermList = alreadyHas 
+        ? role.permissions.filter(p => p !== permName)
+        : [...role.permissions, permName];
+      return { ...role, permissions: newPermList };
+    });
+    handleUpdateRolesAndPermissions(updatedRoles, currentPermissions);
+  };
+
+  const handleToggleSelectAllModule = (roleId: string, moduleKey: string) => {
+    const modulePerms = currentPermissions.filter(p => p.module === moduleKey).map(p => p.name);
+    const updatedRoles = currentRoles.map(role => {
+      if (role.id !== roleId) return role;
+      const hasAll = modulePerms.every(pName => role.permissions.includes(pName));
+      let newPermList: string[];
+      if (hasAll) {
+        newPermList = role.permissions.filter(pName => !modulePerms.includes(pName));
+      } else {
+        newPermList = Array.from(new Set([...role.permissions, ...modulePerms]));
+      }
+      return { ...role, permissions: newPermList };
+    });
+    handleUpdateRolesAndPermissions(updatedRoles, currentPermissions);
+  };
+
+  const handleAddCustomPermission = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newPermName.trim()) return;
+    const cleanPart = newPermName.trim().toLowerCase().replace(/[^a-z0-9_-]/g, '_');
+    const computedName = `${newPermModule}.${cleanPart}`;
+    
+    if (currentPermissions.some(p => p.name.toLowerCase() === computedName.toLowerCase())) {
+      alert(`The permission [${computedName}] already exists.`);
+      return;
+    }
+
+    const createdPerm: SpatiePermission = {
+      id: `perm-${Math.random()}`,
+      name: computedName,
+      module: newPermModule,
+      action: newPermAction,
+      description: newPermDesc.trim() || `Custom permission in module ${newPermModule}`
+    };
+
+    const updatedPerms = [...currentPermissions, createdPerm];
+    handleUpdateRolesAndPermissions(currentRoles, updatedPerms);
+    setNewPermName('');
+    setNewPermDesc('');
+  };
+
+  const handleDeleteCustomPermission = (id: string, name: string) => {
+    const updatedPerms = currentPermissions.filter(p => p.id !== id);
+    // Remove from all roles as well
+    const updatedRoles = currentRoles.map(r => ({
+      ...r,
+      permissions: r.permissions.filter(pName => pName !== name)
+    }));
+    handleUpdateRolesAndPermissions(updatedRoles, updatedPerms);
+  };
 
   // Blog Actions
   const handleAddBlog = (e: React.FormEvent) => {
@@ -227,6 +367,17 @@ export default function ContentDatabase({ config, onChangeConfig }: ContentDatab
           >
             <Database className="w-3.5 h-3.5 text-orange-500" />
             Connections & Migrations
+          </button>
+          <button
+            onClick={() => setActiveTab('spatie')}
+            className={`flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-semibold rounded-lg transition-colors ${
+              activeTab === 'spatie'
+                ? 'bg-white text-indigo-700 shadow-sm'
+                : 'text-slate-500 hover:text-slate-800'
+            }`}
+          >
+            <Shield className="w-3.5 h-3.5 text-emerald-500" />
+            Spatie Roles & Permissions
           </button>
         </div>
       </div>
@@ -492,179 +643,1047 @@ export default function ContentDatabase({ config, onChangeConfig }: ContentDatab
             )}
           </div>
         </div>
-      ) : (
-        <div className="grid grid-cols-1 xl:grid-cols-2 gap-8 align-start">
-          {/* Card 1: Connection configurations */}
-          <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm space-y-5">
-            <div className="flex items-center gap-2 border-b border-slate-100 pb-3">
-              <Server className="w-5 h-5 text-indigo-650" />
-              <div>
-                <h4 className="font-bold text-slate-800 text-sm">Database Settings & Credentials</h4>
-                <p className="text-[11px] text-slate-400">Configure parameters for your compiled .env file</p>
-              </div>
-            </div>
-
-            <form onSubmit={handleSaveConnection} className="space-y-4">
-              <div>
-                <label className="block text-[11px] font-semibold text-slate-500 mb-1">Database Connection Driver (DB_CONNECTION)</label>
-                <select
-                  value={dbState.dbDriver}
-                  onChange={(e) => {
-                    const drv = e.target.value;
-                    let prt = '3306';
-                    if (drv === 'pgsql') prt = '5432';
-                    else if (drv === 'sqlite') prt = '';
-                    setDbState({ ...dbState, dbDriver: drv, dbPort: prt });
-                  }}
-                  className="w-full text-xs bg-slate-50 border border-slate-205 py-2 px-3 rounded-lg text-slate-750 font-medium"
-                >
-                  <option value="sqlite">SQLite (.sqlite database file)</option>
-                  <option value="mysql">MySQL Engine</option>
-                  <option value="pgsql">PostgreSQL Engine</option>
-                </select>
-              </div>
-
-              {dbState.dbDriver !== 'sqlite' && (
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-[11px] font-semibold text-slate-505 mb-1">Database Host (DB_HOST)</label>
-                    <input
-                      type="text"
-                      required
-                      value={dbState.dbHost}
-                      onChange={(e) => setDbState({ ...dbState, dbHost: e.target.value })}
-                      className="w-full text-xs bg-slate-50 border border-slate-205 rounded-lg px-3 py-2 outline-none font-mono"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-[11px] font-semibold text-slate-505 mb-1">Database Port (DB_PORT)</label>
-                    <input
-                      type="text"
-                      required
-                      value={dbState.dbPort}
-                      onChange={(e) => setDbState({ ...dbState, dbPort: e.target.value })}
-                      className="w-full text-xs bg-slate-50 border border-slate-205 rounded-lg px-3 py-2 outline-none font-mono"
-                    />
-                  </div>
+      ) : activeTab === 'migrations' ? (
+        <div className="space-y-8">
+          {/* Top Panel: Credentials Configuration & Visual Migrations Console */}
+          <div className="grid grid-cols-1 xl:grid-cols-2 gap-8 align-start animate-fade-in">
+            {/* Card 1: Connection configurations */}
+            <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm space-y-5">
+              <div className="flex items-center gap-2 border-b border-slate-100 pb-3">
+                <Server className="w-5 h-5 text-indigo-650" />
+                <div>
+                  <h4 className="font-bold text-slate-800 text-sm">Database Settings & Credentials</h4>
+                  <p className="text-[11px] text-slate-400 font-medium">Configure parameters for your compiled .env file</p>
                 </div>
-              )}
-
-              <div>
-                <label className="block text-[11px] font-semibold text-slate-505 mb-1">
-                  {dbState.dbDriver === 'sqlite' ? 'SQLite Database File Path (DB_DATABASE)' : 'Database Name (DB_DATABASE)'}
-                </label>
-                <input
-                  type="text"
-                  required
-                  value={dbState.dbDatabase}
-                  onChange={(e) => setDbState({ ...dbState, dbDatabase: e.target.value })}
-                  className="w-full text-xs bg-slate-50 border border-slate-205 rounded-lg px-3 py-2 outline-none font-mono"
-                />
               </div>
 
-              {dbState.dbDriver !== 'sqlite' && (
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-[11px] font-semibold text-slate-505 mb-1">Database Username (DB_USERNAME)</label>
-                    <input
-                      type="text"
-                      required
-                      value={dbState.dbUsername}
-                      onChange={(e) => setDbState({ ...dbState, dbUsername: e.target.value })}
-                      className="w-full text-xs bg-slate-50 border border-slate-205 rounded-lg px-3 py-2 outline-none font-mono"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-[11px] font-semibold text-slate-505 mb-1">Database Password (DB_PASSWORD)</label>
-                    <input
-                      type="password"
-                      value={dbState.dbPassword}
-                      onChange={(e) => setDbState({ ...dbState, dbPassword: e.target.value })}
-                      className="w-full text-xs bg-slate-50 border border-slate-205 rounded-lg px-3 py-2 outline-none font-mono"
-                      placeholder="Optional"
-                    />
-                  </div>
+              <form onSubmit={handleSaveConnection} className="space-y-4">
+                <div>
+                  <label className="block text-[11px] font-semibold text-slate-500 mb-1">Database Connection Driver (DB_CONNECTION)</label>
+                  <select
+                    value={dbState.dbDriver}
+                    onChange={(e) => {
+                      const drv = e.target.value;
+                      let prt = '3306';
+                      if (drv === 'pgsql') prt = '5432';
+                      else if (drv === 'sqlite') prt = '';
+                      setDbState({ ...dbState, dbDriver: drv, dbPort: prt });
+                    }}
+                    className="w-full text-xs bg-slate-50 border border-slate-205 py-2 px-3 rounded-lg text-slate-750 font-medium cursor-pointer"
+                  >
+                    <option value="sqlite">SQLite (.sqlite database file)</option>
+                    <option value="mysql">MySQL Engine</option>
+                    <option value="pgsql">PostgreSQL Engine</option>
+                  </select>
                 </div>
-              )}
 
-              <button
-                type="submit"
-                className="w-full bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 text-white rounded-lg py-2.5 text-xs font-semibold flex items-center justify-center gap-1.5 transition-all text-center cursor-pointer shadow-sm"
-              >
-                <Save className="w-3.5 h-3.5" />
-                Apply Database Config inside .env
-              </button>
-            </form>
-          </div>
-
-          {/* Card 2: Interactive migrations simulator */}
-          <div className="bg-slate-900 border border-slate-800 rounded-xl p-6 shadow-md flex flex-col justify-between text-slate-200">
-            <div className="space-y-4">
-              <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-                <div className="flex items-center gap-2">
-                  <Terminal className="w-5 h-5 text-indigo-400" />
-                  <div>
-                    <h4 className="font-bold text-white text-sm">Visual Migrations Console</h4>
-                    <p className="text-[11px] text-slate-400">Initialize and seed the configured schemas</p>
-                  </div>
-                </div>
-                <button
-                  type="button"
-                  onClick={handleRunMigrations}
-                  disabled={migrationStatus === 'running'}
-                  className="bg-indigo-650 hover:bg-indigo-600 disabled:opacity-50 active:bg-indigo-700 text-white shadow-sm flex items-center gap-1.5 py-1.5 px-3 rounded-lg text-xs font-bold transition-all cursor-pointer"
-                >
-                  {migrationStatus === 'running' ? (
-                    <>
-                      <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                      Migrating...
-                    </>
-                  ) : (
-                    <>
-                      <Play className="w-3.5 h-3.5 fill-current text-white" />
-                      Run Migrations & Seed
-                    </>
-                  )}
-                </button>
-              </div>
-
-              {/* Terminal Screen */}
-              <div className="bg-slate-950 border border-slate-800 rounded-xl h-64 p-4 font-mono text-[11px] text-slate-300 overflow-y-auto space-y-1 block align-top">
-                {terminalLogs.length === 0 && (
-                  <div className="h-full flex flex-col items-center justify-center text-center text-slate-500 space-y-2">
-                    <CheckCircle2 className="w-8 h-8 text-indigo-500/25" />
-                    <p>Click "Run Migrations & Seed" to test database schema mapping</p>
-                    <p className="text-[10px] text-slate-650">Simulates mapping the schema directly onto [ {dbState.dbDriver} ] tables</p>
+                {dbState.dbDriver !== 'sqlite' && (
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-[11px] font-semibold text-slate-505 mb-1">Database Host (DB_HOST)</label>
+                      <input
+                        type="text"
+                        required
+                        value={dbState.dbHost}
+                        onChange={(e) => setDbState({ ...dbState, dbHost: e.target.value })}
+                        className="w-full text-xs bg-slate-50 border border-slate-205 rounded-lg px-3 py-2 outline-none font-mono"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[11px] font-semibold text-slate-505 mb-1">Database Port (DB_PORT)</label>
+                      <input
+                        type="text"
+                        required
+                        value={dbState.dbPort}
+                        onChange={(e) => setDbState({ ...dbState, dbPort: e.target.value })}
+                        className="w-full text-xs bg-slate-50 border border-slate-205 rounded-lg px-3 py-2 outline-none font-mono"
+                      />
+                    </div>
                   </div>
                 )}
-                {terminalLogs.map((log, idx) => {
-                  let textClass = 'text-slate-300';
-                  if (log.startsWith('$')) textClass = 'text-indigo-400 font-semibold';
-                  else if (log.startsWith('✓') || log.startsWith('SUCCESS')) textClass = 'text-emerald-400 font-semibold';
-                  else if (log.startsWith('INFO')) textClass = 'text-blue-400';
-                  else if (log.startsWith('CRITICAL')) textClass = 'text-amber-400';
-                  else if (log.startsWith('⚡')) textClass = 'text-orange-405 font-semibold';
-                  
-                  return (
-                    <div key={idx} className={`${textClass} leading-relaxed break-all`}>
-                      {log}
+
+                <div>
+                  <label className="block text-[11px] font-semibold text-slate-505 mb-1">
+                    {dbState.dbDriver === 'sqlite' ? 'SQLite Database File Path (DB_DATABASE)' : 'Database Name (DB_DATABASE)'}
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={dbState.dbDatabase}
+                    onChange={(e) => setDbState({ ...dbState, dbDatabase: e.target.value })}
+                    className="w-full text-xs bg-slate-50 border border-slate-205 rounded-lg px-3 py-2 outline-none font-mono"
+                  />
+                </div>
+
+                {dbState.dbDriver !== 'sqlite' && (
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-[11px] font-semibold text-slate-505 mb-1">Database Username (DB_USERNAME)</label>
+                      <input
+                        type="text"
+                        required
+                        value={dbState.dbUsername}
+                        onChange={(e) => setDbState({ ...dbState, dbUsername: e.target.value })}
+                        className="w-full text-xs bg-slate-50 border border-slate-205 rounded-lg px-3 py-2 outline-none font-mono"
+                      />
                     </div>
-                  );
-                })}
-              </div>
+                    <div>
+                      <label className="block text-[11px] font-semibold text-slate-505 mb-1">Database Password (DB_PASSWORD)</label>
+                      <input
+                        type="password"
+                        value={dbState.dbPassword}
+                        onChange={(e) => setDbState({ ...dbState, dbPassword: e.target.value })}
+                        className="w-full text-xs bg-slate-50 border border-slate-205 rounded-lg px-3 py-2 outline-none font-mono"
+                        placeholder="Optional"
+                      />
+                    </div>
+                  </div>
+                )}
+
+                <button
+                  type="submit"
+                  className="w-full bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 text-white rounded-lg py-2.5 text-xs font-semibold flex items-center justify-center gap-1.5 transition-all text-center cursor-pointer shadow-sm"
+                >
+                  <Save className="w-3.5 h-3.5" />
+                  Apply Database Config inside .env
+                </button>
+              </form>
             </div>
 
-            {/* Local dev terminal copy helper */}
-            <div className="mt-4 pt-4 border-t border-slate-800 space-y-1.5 text-left">
-              <span className="text-[10px] font-bold text-slate-400 block uppercase tracking-wider">Local Setup Production Commands</span>
-              <p className="text-[11px] text-slate-400 leading-normal">
-                To migrate and seed this dynamic Bootstrap CMS content on your local system, run these commands inside the root directory:
-              </p>
-              <pre className="p-2.5 bg-slate-950 border border-slate-800 rounded-lg text-[10px] text-slate-200 font-mono whitespace-pre overflow-x-auto text-left">
+            {/* Card 2: Interactive migrations simulator console */}
+            <div className="bg-slate-900 border border-slate-800 rounded-xl p-6 shadow-md flex flex-col justify-between text-slate-200">
+              <div className="space-y-4">
+                <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+                  <div className="flex items-center gap-2">
+                    <Terminal className="w-5 h-5 text-indigo-400" />
+                    <div>
+                      <h4 className="font-bold text-white text-sm">Visual Migrations Console</h4>
+                      <p className="text-[11px] text-slate-400">Initialize and seed the configured schemas</p>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleRunMigrations}
+                    disabled={migrationStatus === 'running'}
+                    className="bg-indigo-650 hover:bg-indigo-600 disabled:opacity-50 active:bg-indigo-700 text-white shadow-sm flex items-center gap-1.5 py-1.5 px-3 rounded-lg text-xs font-bold transition-all cursor-pointer"
+                  >
+                    {migrationStatus === 'running' ? (
+                      <>
+                        <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                        Migrating...
+                      </>
+                    ) : (
+                      <>
+                        <Play className="w-3.5 h-3.5 fill-current text-white" />
+                        Run Migrations & Seed
+                      </>
+                    )}
+                  </button>
+                </div>
+
+                {/* Terminal Screen */}
+                <div className="bg-slate-950 border border-slate-800 rounded-xl h-64 p-4 font-mono text-[11px] text-slate-300 overflow-y-auto space-y-1 block align-top">
+                  {terminalLogs.length === 0 && (
+                    <div className="h-full flex flex-col items-center justify-center text-center text-slate-500 space-y-2">
+                      <CheckCircle2 className="w-8 h-8 text-indigo-500/25" />
+                      <p>Click "Run Migrations & Seed" to test database schema mapping</p>
+                      <p className="text-[10px] text-slate-650 font-medium">Maps physical tables directly onto your simulated [ {dbState.dbDriver} ] schemas</p>
+                    </div>
+                  )}
+                  {terminalLogs.map((log, idx) => {
+                    let textClass = 'text-slate-300';
+                    if (log.startsWith('$')) textClass = 'text-indigo-400 font-semibold';
+                    else if (log.startsWith('✓') || log.startsWith('SUCCESS')) textClass = 'text-emerald-400 font-semibold';
+                    else if (log.startsWith('INFO')) textClass = 'text-blue-400';
+                    else if (log.startsWith('CRITICAL')) textClass = 'text-amber-400';
+                    else if (log.startsWith('⚡')) textClass = 'text-orange-400 font-semibold';
+                    
+                    return (
+                      <div key={idx} className={`${textClass} leading-relaxed break-all`}>
+                        {log}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Local dev terminal copy helper */}
+              <div className="mt-4 pt-4 border-t border-slate-800 space-y-1.5 text-left">
+                <span className="text-[10px] font-bold text-slate-400 block uppercase tracking-wider">Local Setup Production Commands</span>
+                <p className="text-[11px] text-slate-400 leading-normal">
+                  To migrate and seed this dynamic Bootstrap CMS content on your local system, run these commands inside the root directory:
+                </p>
+                <pre className="p-2.5 bg-slate-950 border border-slate-800 rounded-lg text-[10px] text-slate-200 font-mono whitespace-pre overflow-x-auto text-left">
 {`# 1. Config environment details inside .env
 # 2. Run schema execution and seed simulated rows
 php artisan migrate --seed`}
-              </pre>
+                </pre>
+              </div>
+            </div>
+          </div>
+
+          {/* Card 3: Interactive Database Schema & Table Inspector Grid */}
+          <div className="bg-slate-900 border border-slate-850 rounded-xl p-6 shadow-md text-slate-200">
+            <div className="flex flex-col md:flex-row md:items-center justify-between border-b border-slate-800 pb-4 mb-5 gap-3">
+              <div className="flex items-center gap-2.5">
+                <div className="p-2 bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 rounded-lg">
+                  <Database className="w-5 h-5" />
+                </div>
+                <div>
+                  <h4 className="font-bold text-white text-base flex items-center gap-2">
+                    Interactive Database Table Inspector
+                    <span className="text-[11px] font-mono font-medium text-slate-400">({dbState.dbDatabase})</span>
+                  </h4>
+                  <p className="text-xs text-slate-400">Browse actual seeded tables and inspect standard DB structural columns</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-slate-400 text-xs font-semibold">Status:</span>
+                {migrationStatus === 'success' ? (
+                  <span className="bg-emerald-500/10 text-emerald-400 border border-emerald-500/35 px-2.5 py-1 text-[11px] font-bold rounded-full flex items-center gap-1">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                    ACTIVE & SEEDED
+                  </span>
+                ) : migrationStatus === 'running' ? (
+                  <span className="bg-indigo-500/10 text-indigo-450 border border-indigo-500/35 px-2.5 py-1 text-[11px] font-bold rounded-full flex items-center gap-1">
+                    <span className="w-1.5 h-1.5 rounded-full bg-indigo-400 animate-spin"></span>
+                    MIGRATING TABLES...
+                  </span>
+                ) : (
+                  <span className="bg-amber-500/10 text-amber-500 border border-amber-500/35 px-2.5 py-1 text-[11px] font-bold rounded-full flex items-center gap-1 animate-pulse">
+                    <span className="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
+                    MIGRATION PENDING
+                  </span>
+                )}
+              </div>
+            </div>
+
+            {migrationStatus !== 'success' && migrationStatus !== 'running' ? (
+              <div className="py-12 flex flex-col items-center justify-center text-center space-y-3 bg-slate-950/40 rounded-xl border border-dashed border-slate-800/80 p-6">
+                <Database className="w-10 h-10 text-slate-600 animate-pulse" />
+                <div className="max-w-md">
+                  <h5 className="font-bold text-white text-sm">Database Schema Elements Empty</h5>
+                  <p className="text-xs text-slate-400 mt-1 leading-relaxed">
+                    Tables have not been deployed to the virtual schema server yet. Click <span className="text-indigo-400 font-semibold">"Run Migrations & Seed"</span> in the console above to execute SQL blueprints and view schema contents!
+                  </p>
+                </div>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+                {/* Tables sidebar */}
+                <div className="space-y-2">
+                  <span className="text-[10px] font-bold text-slate-450 uppercase tracking-wider block mb-1">Tables (2)</span>
+                  <button
+                    onClick={() => { setInspectTable('blog_posts'); }}
+                    className={`w-full text-left p-3 rounded-lg flex items-center justify-between border transition-all cursor-pointer ${
+                      inspectTable === 'blog_posts'
+                        ? 'bg-indigo-600/15 border-indigo-500/40 text-indigo-300 font-bold'
+                        : 'bg-slate-950/50 border-slate-800/60 text-slate-400 hover:bg-slate-950/80 hover:text-slate-300'
+                    }`}
+                  >
+                    <div className="flex items-center gap-2 text-xs truncate">
+                      <Archive className="w-4.5 h-4.5 flex-shrink-0" />
+                      <span className="truncate">blog_posts</span>
+                    </div>
+                    <span className={`text-[10.5px] font-mono px-2 py-0.5 rounded-md ${
+                      inspectTable === 'blog_posts' ? 'bg-indigo-550/20 text-indigo-400' : 'bg-slate-900 text-slate-500'
+                    }`}>
+                      {config.blogModels.length}
+                    </span>
+                  </button>
+
+                  <button
+                    onClick={() => { setInspectTable('products'); }}
+                    className={`w-full text-left p-3 rounded-lg flex items-center justify-between border transition-all cursor-pointer ${
+                      inspectTable === 'products'
+                        ? 'bg-indigo-600/15 border-indigo-500/40 text-indigo-300 font-bold'
+                        : 'bg-slate-950/50 border-slate-800/60 text-slate-400 hover:bg-slate-950/80 hover:text-slate-300'
+                    }`}
+                  >
+                    <div className="flex items-center gap-2 text-xs truncate">
+                      <Package className="w-4.5 h-4.5 flex-shrink-0" />
+                      <span className="truncate">products</span>
+                    </div>
+                    <span className={`text-[10.5px] font-mono px-2 py-0.5 rounded-md ${
+                      inspectTable === 'products' ? 'bg-indigo-550/20 text-indigo-400' : 'bg-slate-900 text-slate-500'
+                    }`}>
+                      {config.productModels.length}
+                    </span>
+                  </button>
+
+                  <div className="pt-4 border-t border-slate-800 space-y-1 text-slate-500 text-[11px]">
+                    <div className="flex justify-between">
+                      <span>Server Engine:</span>
+                      <span className="text-slate-300 capitalize font-mono">{dbState.dbDriver}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Database:</span>
+                      <span className="text-slate-300 font-mono truncate max-w-[100px]" title={dbState.dbDatabase}>
+                        {dbState.dbDatabase}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Table Data and Column structure frame */}
+                <div className="lg:col-span-3 space-y-4">
+                  {/* Tabs: data vs structure */}
+                  <div className="flex items-center justify-between border-b border-slate-800 pb-2">
+                    <div className="flex items-center gap-1.5 bg-slate-950/80 p-0.5 rounded-lg border border-slate-800/60 font-medium">
+                      <button
+                        onClick={() => setInspectView('data')}
+                        className={`px-3 py-1 text-[11px] font-semibold rounded-md transition-all cursor-pointer ${
+                          inspectView === 'data'
+                            ? 'bg-indigo-600/20 border border-indigo-500/25 text-indigo-300'
+                            : 'text-slate-400 hover:text-slate-200'
+                        }`}
+                      >
+                        Browse Table Data ({inspectTable === 'blog_posts' ? config.blogModels.length : config.productModels.length} rows)
+                      </button>
+                      <button
+                        onClick={() => setInspectView('structure')}
+                        className={`px-3 py-1 text-[11px] font-semibold rounded-md transition-all cursor-pointer ${
+                          inspectView === 'structure'
+                            ? 'bg-indigo-600/20 border border-indigo-500/25 text-indigo-300'
+                            : 'text-slate-400 hover:text-slate-200'
+                        }`}
+                      >
+                        Table Schema Definition
+                      </button>
+                    </div>
+
+                    {inspectView === 'data' && (
+                      <div className="relative">
+                        <input
+                          type="text"
+                          placeholder="Search database rows..."
+                          value={dbSearch}
+                          onChange={(e) => setDbSearch(e.target.value)}
+                          className="bg-slate-950 border border-slate-800 rounded-lg text-xs py-1 px-2.5 outline-none text-slate-200 placeholder-slate-600 w-48 font-medium"
+                        />
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Browser viewport */}
+                  {inspectView === 'data' ? (
+                    <div>
+                      {inspectTable === 'blog_posts' ? (
+                        <div className="overflow-x-auto border border-slate-850 rounded-lg">
+                          <table className="w-full text-left text-[11px]">
+                            <thead className="bg-slate-950 text-slate-400 font-mono border-b border-slate-850">
+                              <tr>
+                                <th className="p-3">id</th>
+                                <th className="p-3">title</th>
+                                <th className="p-3">slug</th>
+                                <th className="p-3">category</th>
+                                <th className="p-3">author</th>
+                                <th className="p-3">created_at</th>
+                              </tr>
+                            </thead>
+                            <tbody className="divide-y divide-slate-850 bg-slate-900/40">
+                              {config.blogModels.filter(b => 
+                                !dbSearch || 
+                                b.title.toLowerCase().includes(dbSearch.toLowerCase()) ||
+                                b.category.toLowerCase().includes(dbSearch.toLowerCase()) ||
+                                b.author.toLowerCase().includes(dbSearch.toLowerCase())
+                              ).map((blog, postIdx) => (
+                                <tr key={blog.id} className="hover:bg-slate-950/20 text-slate-300">
+                                  <td className="p-3 font-mono font-bold text-slate-500">{postIdx + 1}</td>
+                                  <td className="p-3 font-semibold text-white max-w-[150px] truncate" title={blog.title}>{blog.title}</td>
+                                  <td className="p-3 font-mono text-indigo-450 max-w-[100px] truncate">{blog.slug}</td>
+                                  <td className="p-3"><span className="bg-slate-800 text-slate-300 px-1.5 py-0.5 rounded text-[10px] font-semibold">{blog.category}</span></td>
+                                  <td className="p-3 text-slate-400">{blog.author}</td>
+                                  <td className="p-3 font-mono text-slate-500">{blog.createdAt || '2026-06-16'}</td>
+                                </tr>
+                              ))}
+                              {config.blogModels.filter(b => 
+                                !dbSearch || 
+                                b.title.toLowerCase().includes(dbSearch.toLowerCase()) ||
+                                b.category.toLowerCase().includes(dbSearch.toLowerCase())
+                              ).length === 0 && (
+                                <tr>
+                                  <td colSpan={6} className="p-8 text-center text-slate-550">No matching database rows found.</td>
+                                </tr>
+                              )}
+                            </tbody>
+                          </table>
+                        </div>
+                      ) : (
+                        <div className="overflow-x-auto border border-slate-850 rounded-lg">
+                          <table className="w-full text-left text-[11px]">
+                            <thead className="bg-slate-950 text-slate-400 font-mono border-b border-slate-850">
+                              <tr>
+                                <th className="p-3">id</th>
+                                <th className="p-3">name</th>
+                                <th className="p-3">slug</th>
+                                <th className="p-3">price</th>
+                                <th className="p-3">in_stock</th>
+                                <th className="p-3">description</th>
+                              </tr>
+                            </thead>
+                            <tbody className="divide-y divide-slate-850 bg-slate-900/40">
+                              {config.productModels.filter(p => 
+                                !dbSearch || 
+                                p.name.toLowerCase().includes(dbSearch.toLowerCase()) ||
+                                p.slug.toLowerCase().includes(dbSearch.toLowerCase()) ||
+                                p.description.toLowerCase().includes(dbSearch.toLowerCase())
+                              ).map((prod, prodIdx) => (
+                                <tr key={prod.id} className="hover:bg-slate-950/20 text-slate-300">
+                                  <td className="p-3 font-mono font-bold text-slate-500">{prodIdx + 1}</td>
+                                  <td className="p-3 font-semibold text-white max-w-[140px] truncate" title={prod.name}>{prod.name}</td>
+                                  <td className="p-3 font-mono text-indigo-455 max-w-[100px] truncate">{prod.slug}</td>
+                                  <td className="p-3 font-mono text-emerald-400 font-bold">${parseFloat(String(prod.price || 0)).toFixed(2)}</td>
+                                  <td className="p-3">
+                                    <span className={`px-1.5 py-0.5 rounded font-bold text-[9.5px] ${
+                                      prod.inStock ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/15' : 'bg-slate-800 text-slate-450'
+                                    }`}>
+                                      {prod.inStock ? 'TRUE' : 'FALSE'}
+                                    </span>
+                                  </td>
+                                  <td className="p-3 text-slate-450 max-w-[150px] truncate" title={prod.description}>{prod.description}</td>
+                                </tr>
+                              ))}
+                              {config.productModels.filter(p => 
+                                !dbSearch || 
+                                p.name.toLowerCase().includes(dbSearch.toLowerCase()) ||
+                                p.slug.toLowerCase().includes(dbSearch.toLowerCase())
+                              ).length === 0 && (
+                                <tr>
+                                  <td colSpan={6} className="p-8 text-center text-slate-550">No matching database rows found.</td>
+                                </tr>
+                              )}
+                            </tbody>
+                          </table>
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="overflow-x-auto border border-slate-850 rounded-lg animate-fade-in">
+                      <table className="w-full text-left text-[11px]">
+                        <thead className="bg-slate-950 text-slate-400 font-mono border-b border-slate-850">
+                          <tr>
+                            <th className="p-3">Field Column</th>
+                            <th className="p-3">SQL Datatype</th>
+                            <th className="p-3">Constraints</th>
+                            <th className="p-3">Nullability</th>
+                            <th className="p-3">Default Value</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-850 font-mono bg-slate-900/40 text-slate-300 animate-fade-in">
+                          {inspectTable === 'blog_posts' ? (
+                            <>
+                              <tr>
+                                <td className="p-3 font-bold text-white">id</td>
+                                <td className="p-3 text-emerald-400">INTEGER (BigInt)</td>
+                                <td className="p-3 text-orange-400">PRIMARY KEY, AUTO_INC</td>
+                                <td className="p-3 text-slate-500">NO</td>
+                                <td className="p-3 text-slate-500">NULL</td>
+                              </tr>
+                              <tr>
+                                <td className="p-3 font-bold text-white">title</td>
+                                <td className="p-3 text-blue-400">VARCHAR(255)</td>
+                                <td className="p-3 text-slate-500">-</td>
+                                <td className="p-3 text-slate-500">NO</td>
+                                <td className="p-3 text-slate-500">NULL</td>
+                              </tr>
+                              <tr>
+                                <td className="p-3 font-bold text-white">slug</td>
+                                <td className="p-3 text-blue-400">VARCHAR(255)</td>
+                                <td className="p-3 text-orange-400">UNIQUE INDEX</td>
+                                <td className="p-3 text-slate-500">NO</td>
+                                <td className="p-3 text-slate-500">NULL</td>
+                              </tr>
+                              <tr>
+                                <td className="p-3 font-bold text-white">excerpt</td>
+                                <td className="p-3 text-blue-400">TEXT</td>
+                                <td className="p-3 text-slate-500">-</td>
+                                <td className="p-3 text-slate-500">NO</td>
+                                <td className="p-3 text-slate-500">NULL</td>
+                              </tr>
+                              <tr>
+                                <td className="p-3 font-bold text-white">body</td>
+                                <td className="p-3 text-blue-400">LONGTEXT (Text)</td>
+                                <td className="p-3 text-slate-500">-</td>
+                                <td className="p-3 text-slate-500">NO</td>
+                                <td className="p-3 text-slate-500">NULL</td>
+                              </tr>
+                              <tr>
+                                <td className="p-3 font-bold text-white">category</td>
+                                <td className="p-3 text-blue-400">VARCHAR(100)</td>
+                                <td className="p-3 text-slate-500">-</td>
+                                <td className="p-3 text-indigo-400 font-semibold font-sans">YES</td>
+                                <td className="p-3 text-slate-500">NULL</td>
+                              </tr>
+                              <tr>
+                                <td className="p-3 font-bold text-white">author</td>
+                                <td className="p-3 text-blue-400">VARCHAR(100)</td>
+                                <td className="p-3 text-slate-500">-</td>
+                                <td className="p-3 text-indigo-400 font-semibold font-sans">YES</td>
+                                <td className="p-3 text-slate-500">NULL</td>
+                              </tr>
+                              <tr>
+                                <td className="p-3 font-bold text-white">image_url</td>
+                                <td className="p-3 text-blue-400">VARCHAR(2048)</td>
+                                <td className="p-3 text-slate-500">-</td>
+                                <td className="p-3 text-indigo-400 font-semibold font-sans">YES</td>
+                                <td className="p-3 text-slate-500">NULL</td>
+                              </tr>
+                              <tr>
+                                <td className="p-3 font-bold text-white">created_at</td>
+                                <td className="p-3 text-purple-400">TIMESTAMP</td>
+                                <td className="p-3 text-slate-500">-</td>
+                                <td className="p-3 text-indigo-400 font-semibold font-sans">YES</td>
+                                <td className="p-3 text-slate-500">NULL</td>
+                              </tr>
+                              <tr>
+                                <td className="p-3 font-bold text-white">updated_at</td>
+                                <td className="p-3 text-purple-400">TIMESTAMP</td>
+                                <td className="p-3 text-slate-500">-</td>
+                                <td className="p-3 text-indigo-400 font-semibold font-sans">YES</td>
+                                <td className="p-3 text-slate-500">NULL</td>
+                              </tr>
+                            </>
+                          ) : (
+                            <>
+                              <tr>
+                                <td className="p-3 font-bold text-white">id</td>
+                                <td className="p-3 text-emerald-400">INTEGER (BigInt)</td>
+                                <td className="p-3 text-orange-400">PRIMARY KEY, AUTO_INC</td>
+                                <td className="p-3 text-slate-500">NO</td>
+                                <td className="p-3 text-slate-500">NULL</td>
+                              </tr>
+                              <tr>
+                                <td className="p-3 font-bold text-white">name</td>
+                                <td className="p-3 text-blue-400">VARCHAR(255)</td>
+                                <td className="p-3 text-slate-500">-</td>
+                                <td className="p-3 text-slate-500">NO</td>
+                                <td className="p-3 text-slate-500">NULL</td>
+                              </tr>
+                              <tr>
+                                <td className="p-3 font-bold text-white">slug</td>
+                                <td className="p-3 text-blue-400">VARCHAR(255)</td>
+                                <td className="p-3 text-orange-400">UNIQUE INDEX</td>
+                                <td className="p-3 text-slate-500">NO</td>
+                                <td className="p-3 text-slate-500">NULL</td>
+                              </tr>
+                              <tr>
+                                <td className="p-3 font-bold text-white">price</td>
+                                <td className="p-3 text-emerald-400">DECIMAL(10,2)</td>
+                                <td className="p-3 text-slate-500">-</td>
+                                <td className="p-3 text-slate-500">NO</td>
+                                <td className="p-3 text-slate-500">NULL</td>
+                              </tr>
+                              <tr>
+                                <td className="p-3 font-bold text-white">description</td>
+                                <td className="p-3 text-blue-400">TEXT</td>
+                                <td className="p-3 text-slate-500">-</td>
+                                <td className="p-3 text-slate-500">NO</td>
+                                <td className="p-3 text-slate-500">NULL</td>
+                              </tr>
+                              <tr>
+                                <td className="p-3 font-bold text-white">image_url</td>
+                                <td className="p-3 text-blue-400">VARCHAR(2048)</td>
+                                <td className="p-3 text-slate-500">-</td>
+                                <td className="p-3 text-indigo-400 font-semibold font-sans">YES</td>
+                                <td className="p-3 text-slate-500">NULL</td>
+                              </tr>
+                              <tr>
+                                <td className="p-3 font-bold text-white">in_stock</td>
+                                <td className="p-3 text-emerald-400">TINYINT(1)</td>
+                                <td className="p-3 text-slate-500">-</td>
+                                <td className="p-3 text-slate-500">NO</td>
+                                <td className="p-3 text-indigo-400 font-sans">1 (true)</td>
+                              </tr>
+                              <tr>
+                                <td className="p-3 font-bold text-white">created_at</td>
+                                <td className="p-3 text-purple-400">TIMESTAMP</td>
+                                <td className="p-3 text-slate-500">-</td>
+                                <td className="p-3 text-indigo-400 font-semibold font-sans">YES</td>
+                                <td className="p-3 text-slate-500">NULL</td>
+                              </tr>
+                              <tr>
+                                <td className="p-3 font-bold text-white">updated_at</td>
+                                <td className="p-3 text-purple-400">TIMESTAMP</td>
+                                <td className="p-3 text-slate-500">-</td>
+                                <td className="p-3 text-indigo-400 font-semibold font-sans">YES</td>
+                                <td className="p-3 text-slate-500">NULL</td>
+                              </tr>
+                            </>
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Card 4: Local Laragon MySQL Database Troubleshooting Diagnostic Guide */}
+          <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm space-y-4">
+            <div className="flex items-start gap-4 pb-3 border-b border-sidebar border-slate-100">
+              <div className="p-2 bg-indigo-50 text-indigo-700 rounded-lg">
+                <HelpCircle className="w-5 h-5 animate-pulse" />
+              </div>
+              <div>
+                <h4 className="font-bold text-slate-800 text-sm">Local Laragon Database Diagnosis & Setup Guide</h4>
+                <p className="text-[11px] text-slate-400 leading-normal">
+                  Follow these step-by-step instructions to map tables correctly on your local computer using Laragon + HeidiSQL.
+                </p>
+              </div>
+            </div>
+
+            <div className="space-y-4 text-xs leading-relaxed text-slate-650">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                <div className="space-y-2">
+                  <span className="font-bold text-slate-805 block text-xs border-l-2 border-indigo-500 pl-2">Step 1: Create the Database manually in HeidiSQL</span>
+                  <p className="text-[11px] text-slate-500">
+                    Laravel's migration command requires that the MySQL database schema already exist. If you run migrations without creating the blank schema, the connection will abort or throw a <code className="bg-slate-100 rounded px-1 py-0.5 text-orange-655 font-mono">1049 Unknown Database</code> error.
+                  </p>
+                  <div className="bg-slate-55 bg-indigo-50/20 rounded-lg p-3.5 border border-indigo-100 font-sans text-[11px]">
+                    <span className="font-bold text-indigo-950 block mb-1">To create the schema:</span>
+                    <ol className="list-decimal pl-4 space-y-1 text-indigo-900 font-medium">
+                      <li>Launch Laragon and make sure the MySQL service is started.</li>
+                      <li>Click the <strong className="font-bold text-indigo-950">"Database"</strong> button inside Laragon to open HeidiSQL.</li>
+                      <li>In HeidiSQL, right-click on your <code className="bg-slate-100 border border-slate-200/50 rounded px-1 text-[10px] font-mono font-normal">localhost</code> connection name in the left sidebar.</li>
+                      <li>Choose <strong className="font-bold text-indigo-950">"Create new" &rarr; "Database"</strong>.</li>
+                      <li>Input database name: <strong className="font-mono bg-indigo-150/50 px-1.5 py-0.5 rounded text-indigo-700">{dbState.dbDatabase || 'laravel'}</strong> and choose <code className="text-indigo-900">utf8mb4_unicode_ci</code> collation.</li>
+                    </ol>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <span className="font-bold text-slate-805 block text-xs border-l-2 border-indigo-500 pl-2">Step 2: Confirm Laragon Defaults inside .env</span>
+                  <p className="text-[11px] text-slate-500">
+                    Verify that your local <code className="bg-slate-100 px-1 py-0.5 rounded font-mono text-slate-800">.env</code> configurations match Laragon's MySQL defaults. In standard Laragon packages exist without passwords.
+                  </p>
+                  <pre className="p-3 bg-slate-950 text-slate-200 rounded-lg font-mono text-[10.5px] leading-relaxed border border-slate-850 overflow-x-auto">
+{`DB_CONNECTION=mysql
+DB_HOST=127.0.0.1
+DB_PORT=3306
+DB_DATABASE=${dbState.dbDatabase || 'laravel'}
+DB_USERNAME=root
+DB_PASSWORD=`}
+                  </pre>
+                  <p className="text-[10px] font-medium text-slate-400">
+                    *Leave <code className="font-mono bg-slate-100 rounded px-1">DB_PASSWORD</code> completely empty unless you set a customized DB user password.
+                  </p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-5 pt-2 border-t border-slate-100">
+                <div className="space-y-2">
+                  <span className="font-bold text-slate-805 block text-xs border-l-2 border-indigo-500 pl-2">Step 3: Clear Cached Laravel Configurations</span>
+                  <p className="text-[11px] text-slate-500">
+                    If you modified migrations or database settings, Laravel often holds stale configs in boot files. Bust the cache completely to reload environment keys from your newly updated <code className="font-mono">.env</code>:
+                  </p>
+                  <pre className="p-2.5 bg-slate-950 text-slate-200 rounded-lg font-mono text-[11px] leading-snug overflow-x-auto border border-slate-850">
+{`# Clear configurations
+php artisan config:clear
+php artisan cache:clear-env`}
+                  </pre>
+                </div>
+
+                <div className="space-y-2">
+                  <span className="font-bold text-slate-805 block text-xs border-l-2 border-indigo-500 pl-2">Step 4: Execute Fresh Migration (Laragon Console)</span>
+                  <p className="text-[11px] text-slate-500">
+                    Inside your cmd/terminal, navigate to the extracted root directory <code className="text-[10px] font-mono font-semibold bg-slate-100 px-1 py-0.5 text-slate-700">C:\\laragon\\www\\my\\lara_bootstrap_site</code> and run this Artisan wrapper:
+                  </p>
+                  <pre className="p-2.5 bg-slate-950 text-emerald-400 rounded-lg font-mono text-[11px] leading-snug overflow-x-auto border border-slate-850">
+{`# 1. Pull up cmd inside 'lara_bootstrap_site'
+# 2. Re-compile pristine structures and populate datasets
+php artisan migrate:fresh --seed`}
+                  </pre>
+                  <p className="text-[10px] bg-slate-50 text-slate-450 p-2 rounded border leading-relaxed">
+                    <strong>Note:</strong> Laragon does auto-detect folders. Refresh HeidiSQL (F5) after running the seed command; the <span className="font-mono font-semibold text-slate-700">blog_posts</span> and <span className="font-mono font-semibold text-slate-700">products</span> tables will populate instantly!
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      ) : (
+        <div className="space-y-6">
+          {/* Header alert if Spatie is disabled */}
+          {!config.enableSpatiePermissions && (
+            <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 flex items-start gap-3">
+              <Shield className="w-5 h-5 text-amber-500 flex-shrink-0 mt-0.5" />
+              <div className="text-xs text-slate-700">
+                <span className="font-bold text-amber-900 block mb-0.5 animate-pulse">Spatie Permissions Library is Disabled</span>
+                Spatie Roles & Permissions is currently set to inactive in your sidebar settings. Laravel will scaffold clean roles but skip standard authorization directives.
+                <button
+                  type="button"
+                  onClick={() => onChangeConfig({ ...config, enableSpatiePermissions: true })}
+                  className="mt-2 block bg-amber-600 hover:bg-amber-700 active:bg-amber-800 text-white font-bold py-1 px-3 rounded text-[10px] transition-colors cursor-pointer"
+                >
+                  Enable Spatie Protection Engine Now
+                </button>
+              </div>
+            </div>
+          )}
+
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+            {/* LEFT COLUMN: Role Directory */}
+            <div className="lg:col-span-4 space-y-6">
+              {/* Card 1: Add custom role */}
+              <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm">
+                <h4 className="text-xs font-bold uppercase tracking-widest text-indigo-600 mb-3.5 flex items-center gap-1.5">
+                  <Plus className="w-4 h-4" />
+                  Define New ACL Role
+                </h4>
+                <form onSubmit={handleAddCustomRole} className="space-y-3">
+                  <div>
+                    <label className="block text-[11px] font-semibold text-slate-500 mb-1 font-mono">Role Key/Name</label>
+                    <input
+                      type="text"
+                      required
+                      value={newRoleName}
+                      onChange={(e) => setNewRoleName(e.target.value)}
+                      placeholder="e.g. Moderator"
+                      className="w-full text-xs bg-slate-50 border border-slate-205 rounded-lg px-3 py-2 outline-none focus:bg-white focus:border-indigo-400"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[11px] font-semibold text-slate-500 mb-1 font-mono">Role Description</label>
+                    <textarea
+                      rows={2}
+                      value={newRoleDesc}
+                      onChange={(e) => setNewRoleDesc(e.target.value)}
+                      placeholder="e.g. Can browse drafts but cannot publish"
+                      className="w-full text-xs bg-slate-50 border border-slate-205 rounded-lg px-3 py-2 outline-none focus:bg-white focus:border-indigo-400"
+                    />
+                  </div>
+                  <button
+                    type="submit"
+                    className="w-full bg-slate-900 hover:bg-slate-800 active:bg-indigo-700 text-white rounded-lg py-2 text-xs font-bold transition-all cursor-pointer"
+                  >
+                    Scaffold Custom Role
+                  </button>
+                </form>
+              </div>
+
+              {/* Card 2: Role lists */}
+              <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm">
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-3 font-mono">Role Directory ({currentRoles.length})</span>
+                <div className="space-y-2">
+                  {currentRoles.map((role) => {
+                    const isSelected = selectedRoleId === role.id;
+                    const isAdministrator = role.name === 'Administrator';
+                    return (
+                      <div
+                        key={role.id}
+                        onClick={() => setSelectedRoleId(role.id)}
+                        className={`p-3 rounded-lg border transition-all cursor-pointer flex items-start justify-between group ${
+                          isSelected
+                            ? 'bg-indigo-50/50 border-indigo-200 text-indigo-900 shadow-sm'
+                            : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50/70'
+                        }`}
+                      >
+                        <div className="min-w-0 pr-4">
+                          <h5 className="font-bold text-xs flex items-center gap-1.5 capitalize text-slate-800">
+                            <Users className={`w-3.5 h-3.5 ${isSelected ? 'text-indigo-600' : 'text-slate-400'}`} />
+                            {role.name}
+                          </h5>
+                          <p className="text-[11px] text-slate-500 line-clamp-1 mt-0.5" title={role.description}>
+                            {role.description}
+                          </p>
+                          <div className="mt-2.5 flex items-center gap-1 flex-wrap">
+                            <span className="text-[9px] font-mono bg-slate-100 text-slate-600 border px-1.5 py-0.5 rounded-md font-bold">
+                              {role.permissions.length} perms
+                            </span>
+                            <span className="text-[9px] font-mono bg-slate-100/50 text-slate-400 px-1 rounded-md">
+                              guard: web
+                            </span>
+                          </div>
+                        </div>
+
+                        {!isAdministrator && (
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleDeleteCustomRole(role.id, role.name);
+                            }}
+                            className="text-slate-400 hover:text-rose-600 opacity-0 group-hover:opacity-100 p-1 rounded transition-opacity cursor-pointer"
+                            title={`Delete role ${role.name}`}
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+
+            {/* RIGHT COLUMN: Specific Permissions Matrix */}
+            <div className="lg:col-span-8 space-y-6">
+              {/* Card 1: Permissions Matrix for Selected Role */}
+              {selectedRoleId && currentRoles.find(r => r.id === selectedRoleId) ? (
+                (() => {
+                  const activeRole = currentRoles.find(r => r.id === selectedRoleId)!;
+                  
+                  // Group permissions by module
+                  const modulesMap: Record<string, SpatiePermission[]> = {};
+                  currentPermissions.forEach(p => {
+                    if (!modulesMap[p.module]) {
+                      modulesMap[p.module] = [];
+                    }
+                    modulesMap[p.module].push(p);
+                  });
+
+                  // Maps module identifiers to printable names
+                  const moduleHeaders: Record<string, string> = {
+                    blog_posts: 'BlogPost Controller (App\\Models\\BlogPost)',
+                    products: 'Product CRUD (App\\Models\\Product)',
+                    pages: 'CMS Pages Router (WebPagesController)',
+                    roles: 'Role & Permission Manager',
+                    system: 'Core System Administration',
+                  };
+
+                  return (
+                    <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm space-y-6">
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b pb-4 border-slate-100">
+                        <div className="flex items-center gap-3">
+                          <div className="p-2 bg-indigo-50 text-indigo-650 border border-indigo-100 rounded-lg">
+                            <Shield className="w-5 h-5" />
+                          </div>
+                          <div>
+                            <h4 className="font-bold text-slate-800 text-sm">
+                              Spatie Guard Assignment & Permissions
+                            </h4>
+                            <p className="text-[11px] text-slate-500 mt-0.5">
+                              Configure CRUD access rights for <span className="font-bold text-indigo-700 capitalize font-mono bg-slate-50 px-1 py-0.5 rounded border">{activeRole.name}</span>
+                            </p>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-1.5 self-start sm:self-center">
+                          <span className="text-[10px] text-slate-400 uppercase font-bold">Acting Role:</span>
+                          <span className="bg-indigo-100 inline-block text-indigo-700 font-bold font-mono text-[10px] px-2.5 py-1 rounded-full capitalize">
+                            {activeRole.name}
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Permissions Group Grid */}
+                      <div className="space-y-5">
+                        {Object.keys(modulesMap).map((modKey) => {
+                          const permsInMod = modulesMap[modKey];
+                          const hasAll = permsInMod.every(p => activeRole.permissions.includes(p.name));
+                          
+                          return (
+                            <div key={modKey} className="border border-slate-150 rounded-xl p-4 bg-slate-50/50">
+                              <div className="flex items-center justify-between border-b border-slate-200 pb-2 mb-3">
+                                <div>
+                                  <h5 className="text-xs font-bold text-slate-700 capitalize">
+                                    {moduleHeaders[modKey] || `${modKey.replace(/[-_]/g, ' ')} Module`}
+                                  </h5>
+                                  <p className="text-[9.5px] text-slate-400 mt-0.5 font-medium">CRUD abilities bound to controller middlewares</p>
+                                </div>
+                                <button
+                                  type="button"
+                                  onClick={() => handleToggleSelectAllModule(activeRole.id, modKey)}
+                                  className="text-[10px] font-bold text-indigo-600 hover:text-indigo-800 cursor-pointer hover:underline"
+                                >
+                                  {hasAll ? 'Deselect All' : 'Grant All CRUD'}
+                                </button>
+                              </div>
+
+                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                {permsInMod.map((perm) => {
+                                  const isChecked = activeRole.permissions.includes(perm.name);
+                                  
+                                  // Color schemes depending on action type
+                                  const actionColors: Record<string, string> = {
+                                    create: 'bg-emerald-50 text-emerald-800 border-emerald-100',
+                                    read: 'bg-blue-50 text-blue-800 border-blue-100',
+                                    update: 'bg-amber-50 text-amber-800 border-amber-100',
+                                    delete: 'bg-rose-50 text-rose-800 border-rose-100',
+                                    manage: 'bg-purple-50 text-purple-800 border-purple-100',
+                                  };
+
+                                  return (
+                                    <div
+                                      key={perm.id}
+                                      onClick={() => handleTogglePermission(activeRole.id, perm.name)}
+                                      className={`p-2.5 rounded-lg border transition-all cursor-pointer flex items-start gap-2.5 select-none ${
+                                        isChecked
+                                          ? 'bg-white border-indigo-200 shadow-sm text-slate-800'
+                                          : 'bg-white/60 border-slate-200 text-slate-400 hover:border-slate-300'
+                                      }`}
+                                    >
+                                      <div className={`mt-0.5 w-4 h-4 rounded border flex items-center justify-center transition-colors ${
+                                        isChecked ? 'bg-indigo-600 border-indigo-600 text-white' : 'border-slate-300 bg-white'
+                                      }`}>
+                                        {isChecked && <Check className="w-3 h-3 stroke-[3px]" />}
+                                      </div>
+                                      <div className="min-w-0 flex-1">
+                                        <div className="flex items-center gap-1.5 flex-wrap">
+                                          <span className="font-mono text-[10px] font-semibold text-slate-700 block truncate" title={perm.name}>
+                                            {perm.name}
+                                          </span>
+                                          <span className={`text-[8.5px] font-bold px-1.5 py-0.2 rounded-full uppercase tracking-wider ${
+                                            actionColors[perm.action] || 'bg-slate-100 text-slate-700'
+                                          }`}>
+                                            {perm.action}
+                                          </span>
+                                        </div>
+                                        <p className="text-[10px] text-slate-500 mt-0.5">{perm.description}</p>
+                                      </div>
+                                      
+                                      {/* Allow deleting custom permissions (whose id starts with "perm-") */}
+                                      {perm.id.startsWith('perm-') && (
+                                        <button
+                                          type="button"
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            handleDeleteCustomPermission(perm.id, perm.name);
+                                          }}
+                                          className="text-slate-300 hover:text-rose-600 p-1 cursor-pointer"
+                                          title="Remove custom permission"
+                                        >
+                                          <Trash2 className="w-3.5 h-3.5" />
+                                        </button>
+                                      )}
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+
+                      {/* Display warning helper */}
+                      <div className="p-3.5 bg-indigo-50/40 border border-indigo-150 rounded-lg text-[10.5px] text-slate-600 flex items-start gap-2">
+                        <Lock className="w-4 h-4 text-indigo-500 mt-0.5 flex-shrink-0" />
+                        <div>
+                          <strong>Spatie Blade Directive Mapping:</strong> Assigning these permits creates mapping tables. In Laragon welcome layouts, they auto-authorize view elements using standard directive checks e.g. <code className="bg-slate-100 rounded px-1.5 py-0.5 text-[10px] text-amber-800 font-mono font-semibold">@can('{activeRole.permissions[0] || 'blog_posts.create'}') ... @endcan</code> automatically!
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })()
+              ) : (
+                <div className="bg-white border border-slate-200 rounded-xl p-8 text-center text-slate-400 text-xs shadow-sm">
+                  Select a User Role in the left directory to configure and bind permissions.
+                </div>
+              )}
+
+              {/* Card 2: Create Custom Permission */}
+              <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm">
+                <h4 className="text-xs font-bold uppercase tracking-widest text-indigo-650 mb-3.5 flex items-center gap-1.5">
+                  <Key className="w-4 h-4" />
+                  Define Custom Action Permission
+                </h4>
+                <form onSubmit={handleAddCustomPermission} className="space-y-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <div>
+                      <label className="block text-[11px] font-semibold text-slate-500 mb-1 font-mono">Module Area</label>
+                      <select
+                        value={newPermModule}
+                        onChange={(e) => setNewPermModule(e.target.value)}
+                        className="w-full text-xs bg-slate-50 border border-slate-205 py-2 px-3 rounded-lg text-slate-700 cursor-pointer"
+                      >
+                        <option value="blog_posts">blog_posts (Blogs)</option>
+                        <option value="products">products (Product Catalog)</option>
+                        <option value="pages">pages (Router Modules)</option>
+                        <option value="system">system (System Audit)</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-[11px] font-semibold text-slate-500 mb-1 font-mono">CRUD Action Type</label>
+                      <select
+                        value={newPermAction}
+                        onChange={(e) => setNewPermAction(e.target.value as any)}
+                        className="w-full text-xs bg-slate-50 border border-slate-205 py-2 px-3 rounded-lg text-slate-700 cursor-pointer"
+                      >
+                        <option value="create">create</option>
+                        <option value="read">read</option>
+                        <option value="update">update</option>
+                        <option value="delete">delete</option>
+                        <option value="manage">manage</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-[11px] font-semibold text-slate-500 mb-1 font-mono">Permission Key Suffix</label>
+                      <input
+                        type="text"
+                        required
+                        value={newPermName}
+                        onChange={(e) => setNewPermName(e.target.value)}
+                        placeholder="e.g. approve_drafts"
+                        className="w-full text-xs bg-slate-50 border border-slate-205 rounded-lg px-3 py-2 outline-none focus:bg-white focus:border-indigo-400"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
+                    <div className="sm:col-span-3">
+                      <label className="block text-[11px] font-semibold text-slate-500 mb-1 font-mono">Purpose / Description</label>
+                      <input
+                        type="text"
+                        value={newPermDesc}
+                        onChange={(e) => setNewPermDesc(e.target.value)}
+                        placeholder="e.g. Allows approving and scheduling draft blog entries"
+                        className="w-full text-xs bg-slate-50 border border-slate-205 rounded-lg px-3 py-2 outline-none focus:bg-white focus:border-indigo-400"
+                      />
+                    </div>
+                    <div className="flex items-end">
+                      <button
+                        type="submit"
+                        className="w-full bg-slate-900 hover:bg-slate-800 active:bg-indigo-700 text-white rounded-lg py-2  text-xs font-bold cursor-pointer transition-all text-center"
+                      >
+                        Register Perm
+                      </button>
+                    </div>
+                  </div>
+                  
+                  {newPermName.trim() && (
+                    <div className="text-[10px] font-mono text-indigo-650 bg-indigo-50/50 border border-indigo-100 p-2.5 rounded-lg">
+                      <strong>Generated Spatie Permission Tag:</strong> {newPermModule}.{newPermName.trim().toLowerCase().replace(/[^a-z0-9_-]/g, '_')}
+                    </div>
+                  )}
+                </form>
+              </div>
+
+              {/* Card 3: Middleware Integration Guide */}
+              <div className="bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-sm text-slate-200">
+                <div className="flex items-center gap-2 border-b border-slate-800 pb-2.5 mb-3">
+                  <Terminal className="text-emerald-400 w-4.5 h-4.5" />
+                  <span className="text-[11px] font-bold text-white uppercase tracking-wider block">Laravel Spatie PHP Implementation Guide</span>
+                </div>
+                <div className="space-y-3.5 text-xs text-slate-300">
+                  <p className="leading-relaxed text-[11px]">
+                    Spatie permissions are mapped via standard Laravel Gates inside <code className="text-indigo-300 font-mono">App\Providers\AppServiceProvider.php</code>.
+                  </p>
+                  
+                  <div className="space-y-2">
+                    <span className="text-[10.5px] font-bold text-slate-405 block tracking-wide font-mono">1. Route / Controller Middleware Protection</span>
+                    <pre className="p-2.5 bg-slate-950 text-slate-200 border border-slate-850 rounded-lg text-[10px] font-mono leading-relaxed overflow-x-auto text-left">
+{`use Spatie\\Permission\\Middlewares\\PermissionMiddleware;
+
+// Group or single protected router endpoint 
+Route::post('/admin/blogs', [BlogPostController::class, 'store'])
+    ->middleware('permission:blog_posts.create');`}
+                    </pre>
+                  </div>
+
+                  <div className="space-y-2">
+                    <span className="text-[10.5px] font-bold text-slate-405 block tracking-wide font-mono">2. Front-End Blade Directive Authorization</span>
+                    <pre className="p-2.5 bg-slate-950 text-slate-200 border border-slate-850 rounded-lg text-[10px] font-mono leading-relaxed overflow-x-auto text-left">
+{`@can('products.create')
+    <button class="btn btn-primary">Add New Product</button>
+@endcan`}
+                    </pre>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </div>

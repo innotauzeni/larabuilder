@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { WebDesignConfig, Page, ColorPalette, Block, BlockType } from '../types';
 import { COLOR_PALETTES, createDefaultBlocks } from '../data';
-import { FolderPlus, Trash, ChevronUp, ChevronDown, Check, Eye, EyeOff, LayoutTemplate, Palette, Globe, HardDrive, Plus, Cpu, Settings } from 'lucide-react';
+import { FolderPlus, Trash, ChevronUp, ChevronDown, Check, Eye, EyeOff, LayoutTemplate, Palette, Globe, HardDrive, Plus, Cpu, Settings, Shield, Zap, Users } from 'lucide-react';
 
 interface SidebarEditorProps {
   config: WebDesignConfig;
@@ -19,6 +19,59 @@ export default function SidebarEditor({
   const [newPageTitle, setNewPageTitle] = useState('');
   const [showAddPage, setShowAddPage] = useState(false);
   const activePage = config.pages.find(p => p.id === config.activePageId) || config.pages[0];
+
+  const moveModule = (index: number, direction: 'up' | 'down') => {
+    if (!config.modules) return;
+    const items = [...config.modules];
+    const targetIdx = direction === 'up' ? index - 1 : index + 1;
+    if (targetIdx < 0 || targetIdx >= items.length) return;
+    
+    // Swap
+    const temp = items[index];
+    items[index] = items[targetIdx];
+    items[targetIdx] = temp;
+    
+    const reordered = items.map((m, idx) => ({ ...m, order: idx + 1 }));
+    onChangeConfig({ ...config, modules: reordered });
+  };
+
+  const moveSubmodule = (moduleIndex: number, submoduleIndex: number, direction: 'up' | 'down') => {
+    if (!config.modules) return;
+    const updatedModules = [...config.modules];
+    const submodules = [...updatedModules[moduleIndex].submodules];
+    const targetIdx = direction === 'up' ? submoduleIndex - 1 : submoduleIndex + 1;
+    if (targetIdx < 0 || targetIdx >= submodules.length) return;
+    
+    // Swap
+    const temp = submodules[submoduleIndex];
+    submodules[submoduleIndex] = submodules[targetIdx];
+    submodules[targetIdx] = temp;
+    
+    updatedModules[moduleIndex].submodules = submodules.map((s, idx) => ({ ...s, order: idx + 1 }));
+    onChangeConfig({ ...config, modules: updatedModules });
+  };
+
+  const updateModuleName = (id: string, newName: string) => {
+    if (!config.modules) return;
+    onChangeConfig({
+      ...config,
+      modules: config.modules.map(m => m.id === id ? { ...m, name: newName } : m)
+    });
+  };
+
+  const updateSubmoduleName = (moduleId: string, subId: string, newName: string) => {
+    if (!config.modules) return;
+    onChangeConfig({
+      ...config,
+      modules: config.modules.map(m => {
+        if (m.id !== moduleId) return m;
+        return {
+          ...m,
+          submodules: m.submodules.map(s => s.id === subId ? { ...s, name: newName } : s)
+        };
+      })
+    });
+  };
 
   // Projects config
   const handleProjectNameChange = (name: string) => {
@@ -442,6 +495,175 @@ export default function SidebarEditor({
               </button>
             );
           })}
+        </div>
+      </div>
+
+      {/* 5-Layer Architect & Blade Options */}
+      <div>
+        <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-2.5 flex items-center gap-1.5 px-0.5">
+          <Cpu className="w-3.5 h-3.5 text-indigo-400" />
+          5-Layer Architect & Blade Options
+        </h4>
+        <div className="bg-slate-900/40 p-4 rounded-xl border border-slate-700/50 space-y-4 shadow-xl">
+          {/* Blade Template Selector */}
+          <div>
+            <label className="block text-[11px] font-semibold text-slate-400 mb-1.5">
+              Blade Master Layout Template
+            </label>
+            <select
+              value={config.bladeTemplateStyle || 'landing'}
+              onChange={(e) => onChangeConfig({ ...config, bladeTemplateStyle: e.target.value as any })}
+              className="w-full text-xs bg-slate-950/80 border border-slate-700/80 py-1.5 px-2 rounded-lg text-slate-200 outline-none focus:border-indigo-500 font-medium"
+            >
+              <option value="landing">Standard Landing Portal Theme</option>
+              <option value="admin_dashboard">Enterprise Admin Workspace Theme</option>
+              <option value="business_portal">Business Portal (Mega Menu) Theme</option>
+              <option value="laravel_breeze">Laravel Breeze (Alpine/Tailwind Minimalist) Theme</option>
+              <option value="laravel_ui">Laravel UI (Bootstrap Standard Authentic) Theme</option>
+            </select>
+          </div>
+
+          <hr className="border-slate-800" />
+
+          {/* Core MediatR & 5-Layer Architecture switches */}
+          <div className="space-y-3">
+            <label className="block text-[10px] font-semibold text-slate-400 uppercase tracking-wider">
+              Modular Architecture Features
+            </label>
+            
+            <label className="flex items-center gap-2.5 cursor-pointer group">
+              <input
+                type="checkbox"
+                checked={config.enableSpatiePermissions}
+                onChange={(e) => onChangeConfig({ ...config, enableSpatiePermissions: e.target.checked })}
+                className="w-3.5 h-3.5 rounded border-slate-700 bg-slate-950 text-indigo-600 focus:ring-0 focus:ring-offset-0"
+              />
+              <div className="flex-1">
+                <div className="text-xs font-semibold text-slate-200 group-hover:text-white transition-colors flex items-center gap-1">
+                  <Shield className="w-3 h-3 text-emerald-400" />
+                  Spatie Roles & Permissions
+                </div>
+                <div className="text-[10px] text-slate-500">Auto-seed Roles & guards</div>
+              </div>
+            </label>
+
+            <label className="flex items-center gap-2.5 cursor-pointer group">
+              <input
+                type="checkbox"
+                checked={config.enableAuditTrail}
+                onChange={(e) => onChangeConfig({ ...config, enableAuditTrail: e.target.checked })}
+                className="w-3.5 h-3.5 rounded border-slate-700 bg-slate-950 text-indigo-600 focus:ring-0 focus:ring-offset-0"
+              />
+              <div className="flex-1">
+                <div className="text-xs font-semibold text-slate-200 group-hover:text-white transition-colors flex items-center gap-1">
+                  <Zap className="w-3 h-3 text-amber-400" />
+                  Audit Trail Action Logs
+                </div>
+                <div className="text-[10px] text-slate-500">Logs every Service transaction</div>
+              </div>
+            </label>
+
+            <label className="flex items-center gap-2.5 cursor-pointer group">
+              <input
+                type="checkbox"
+                checked={config.enableDynamicMenu}
+                onChange={(e) => onChangeConfig({ ...config, enableDynamicMenu: e.target.checked })}
+                className="w-3.5 h-3.5 rounded border-slate-700 bg-slate-950 text-indigo-600 focus:ring-0 focus:ring-offset-0"
+              />
+              <div className="flex-1">
+                <div className="text-xs font-semibold text-slate-200 group-hover:text-white transition-colors flex items-center gap-1">
+                  <Settings className="w-3 h-3 text-indigo-400" />
+                  Dynamic Menu Modules
+                </div>
+                <div className="text-[10px] text-slate-500">Modules → Submodules sequence</div>
+              </div>
+            </label>
+          </div>
+
+          {/* If Dynamic Menu system, render Modules List Sort Hierarchy editor (Drag-and-Drop) */}
+          {config.enableDynamicMenu && config.modules && config.modules.length > 0 && (
+            <div className="mt-4 pt-4 border-t border-slate-800 space-y-3">
+              <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider flex justify-between items-center">
+                <span>Modules Order (Drag/Sort)</span>
+                <span className="text-[9px] text-indigo-400 font-mono">Total: {config.modules.length}</span>
+              </div>
+              
+              <div className="space-y-3">
+                {config.modules.map((mod, modIdx) => (
+                  <div key={mod.id} className="bg-slate-950/65 border border-slate-800 p-2.5 rounded-lg space-y-2">
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-1.5 flex-1">
+                        <Users className="w-3.5 h-3.5 text-indigo-400 flex-shrink-0" />
+                        <input
+                          type="text"
+                          value={mod.name}
+                          onChange={(e) => updateModuleName(mod.id, e.target.value)}
+                          className="bg-transparent text-xs text-slate-200 border-none underline decoration-slate-800 focus:decoration-indigo-500 outline-none font-semibold p-0 w-full"
+                          placeholder="Module Name"
+                        />
+                      </div>
+                      
+                      {/* Priority Ordering Arrows (Drag-and-Drop) */}
+                      <div className="flex items-center gap-0.5">
+                        <button
+                          type="button"
+                          disabled={modIdx === 0}
+                          onClick={() => moveModule(modIdx, 'up')}
+                          className="p-1 rounded bg-slate-900 border border-slate-800 text-slate-400 hover:text-white disabled:opacity-30"
+                          title="Move module up"
+                        >
+                          <ChevronUp className="w-3 h-3" />
+                        </button>
+                        <button
+                          type="button"
+                          disabled={modIdx === config.modules.length - 1}
+                          onClick={() => moveModule(modIdx, 'down')}
+                          className="p-1 rounded bg-slate-900 border border-slate-800 text-slate-400 hover:text-white disabled:opacity-30"
+                          title="Move module down"
+                        >
+                          <ChevronDown className="w-3 h-3" />
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Submodules sort nested inside */}
+                    <div className="pl-3.5 border-l border-slate-800 space-y-1.5">
+                      {mod.submodules.map((sub, subIdx) => (
+                        <div key={sub.id} className="flex items-center justify-between text-[11px] text-slate-400 hover:text-slate-200">
+                          <input
+                            type="text"
+                            value={sub.name}
+                            onChange={(e) => updateSubmoduleName(mod.id, sub.id, e.target.value)}
+                            className="bg-transparent text-[11px] text-slate-400 border-none focus:underline outline-none p-0 w-2/3"
+                          />
+                          <div className="flex items-center gap-0.5">
+                            <button
+                              type="button"
+                              disabled={subIdx === 0}
+                              onClick={() => moveSubmodule(modIdx, subIdx, 'up')}
+                              className="text-slate-500 hover:text-slate-200 disabled:opacity-30 p-0.5"
+                              title="Move submodule up"
+                            >
+                              <ChevronUp className="w-3 h-3" />
+                            </button>
+                            <button
+                              type="button"
+                              disabled={subIdx === mod.submodules.length - 1}
+                              onClick={() => moveSubmodule(modIdx, subIdx, 'down')}
+                              className="text-slate-500 hover:text-slate-200 disabled:opacity-30 p-0.5"
+                              title="Move submodule down"
+                            >
+                              <ChevronDown className="w-3 h-3" />
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
